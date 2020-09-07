@@ -1,2 +1,8 @@
+# scala specifics
+**/target
 *.class
 *.log
+
+# intellij idea specifics
+.idea/
+*.iml
