@@ -3,4 +3,8 @@
   ~ This is free and unencumbered software released into the public domain.
   -->
 
+
+<!--
+  ~ FIXME Remove when https://github.com/sbt/sbt/pull/5640 is released
+  -->
 <Configuration/>
