@@ -6,6 +6,7 @@ package dads
 package v1
 
 import com.typesafe.config._
+
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
 
@@ -29,7 +30,7 @@ class Main(system: ActorSystem[_]) {
     .addJvmShutdownHook {
       LoggerFactory
         .getLogger(Main.getClass)
-        .info("DADS Shutdown")
+        .info("DADS Stopped")
     }
 
   def run(): Unit =
