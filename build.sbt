@@ -19,7 +19,7 @@ lazy val dads =
              , addCompilerPlugin(KindProjectorPlugin)
              )
 
-dockerRepository              := Some("nmcb")
+dockerRepository              := Some("dads")
 dockerBaseImage               := "java"
 version            in Docker  := "latest"
 dockerExposedPorts in Docker  := Seq(8080)

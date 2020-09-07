@@ -6,4 +6,5 @@ services:
     ports:
       - '8080:8080'
     volumes:
-      - ./target/:/var/log/:rw
+      - /target/:/var/log/:rw # FIXME Location production log
+
