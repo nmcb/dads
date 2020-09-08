@@ -12,7 +12,7 @@ lazy val dads =
     .configs(IntegrationTest)
     .enablePlugins(AkkaGrpcPlugin, JavaAppPackaging)
     .settings( name                := "dads"
-             , libraryDependencies ++= platformDeps ++ monitoringDeps ++ testDeps ++ bumpGrpcDeps
+             , libraryDependencies ++= platformDeps ++ monitoringDeps ++ testDeps ++ bumpGrpcDeps ++ bumpAkkaTestDeps
              , scalacOptions       ++= hygienicScalacOps
              , Defaults.itSettings
              , onPublishMaskDocumentation

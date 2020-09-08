@@ -14,6 +14,7 @@ object Dependencies {
   val catsCoreVersion                 = "2.1.1"
   val kindProjectorPluginVersion      = "0.11.0"
   val scalaTestVersion                = "3.1.1"
+  val akkaPersistenceCassandraVersion = "1.0.1"
 
   // LIBRARIES
 
@@ -29,13 +30,24 @@ object Dependencies {
        )
 
   lazy val monitoringDeps: Seq[ModuleID] =
-    Seq(
-      "com.typesafe.akka"  %% "akka-slf4j"       % akkaVersion,
-      "ch.qos.logback"     %  "logback-classic"  % logbackVersion
-    )
+    Seq( "com.typesafe.akka"  %% "akka-slf4j"       % akkaVersion
+       , "ch.qos.logback"     %  "logback-classic"  % logbackVersion
+       )
 
   lazy val testUtilDeps: Seq[ModuleID] =
-    Seq( "org.scalatest"      %% "scalatest" % scalaTestVersion )
+    Seq( "org.scalatest"      %% "scalatest"                           % scalaTestVersion
+       , "com.typesafe.akka"  %% "akka-persistence-cassandra"          % akkaPersistenceCassandraVersion
+       , "com.typesafe.akka"  %% "akka-persistence-cassandra-launcher" % akkaPersistenceCassandraVersion
+       )
+//akka-persistence, akka-remote, akka-cluster, akka-persistence-query, akka-coordination, akka-cluster-tools
+  lazy val bumpAkkaTestDeps: Seq[ModuleID] =
+    Seq( "com.typesafe.akka"  %% "akka-persistence"        % akkaVersion
+       , "com.typesafe.akka"  %% "akka-remote"             % akkaVersion
+       , "com.typesafe.akka"  %% "akka-cluster"            % akkaVersion
+       , "com.typesafe.akka"  %% "akka-persistence-query"  % akkaVersion
+       , "com.typesafe.akka"  %% "akka-coordination"       % akkaVersion
+       , "com.typesafe.akka"  %% "akka-cluster-tools"      % akkaVersion
+       )
 
   lazy val testDeps: Seq[ModuleID] =
     testUtilDeps.map(_ % "test,it")
