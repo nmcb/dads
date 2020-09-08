@@ -2,6 +2,8 @@
  * This is free and unencumbered software released into the public domain.
  */
 
+use dads;
+
 -- Cumulative tables.
 create table day (     // Existing
     source  uuid,

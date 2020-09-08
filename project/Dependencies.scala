@@ -9,6 +9,7 @@ object Dependencies {
   // VERSIONS
 
   val akkaVersion                     = "2.6.8"
+  val akkaAlpakkaVersion              = "2.0.1"
   val logbackVersion                  = "1.2.3"
   val catsCoreVersion                 = "2.1.1"
   val kindProjectorPluginVersion      = "0.11.0"
@@ -17,13 +18,14 @@ object Dependencies {
   // LIBRARIES
 
   lazy val platformDeps: Seq[ModuleID] =
-    Seq( "com.typesafe.akka"  %% "akka-actor-typed"  % akkaVersion
+    Seq( "com.typesafe.akka"  %% "akka-actor-typed"              % akkaVersion
+       , "com.lightbend.akka" %% "akka-stream-alpakka-cassandra" % akkaAlpakkaVersion
        )
 
   lazy val bumpGrpcDeps: Seq[ModuleID] =
-    Seq( "com.typesafe.akka"  %% "akka-discovery"    % akkaVersion
-       , "com.typesafe.akka"  %% "akka-protobuf"     % akkaVersion
-       , "com.typesafe.akka"  %% "akka-stream"       % akkaVersion
+    Seq( "com.typesafe.akka"  %% "akka-discovery"  % akkaVersion
+       , "com.typesafe.akka"  %% "akka-protobuf"   % akkaVersion
+       , "com.typesafe.akka"  %% "akka-stream"     % akkaVersion
        )
 
   lazy val monitoringDeps: Seq[ModuleID] =
