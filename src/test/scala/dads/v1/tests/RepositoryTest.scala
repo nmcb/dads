@@ -42,7 +42,7 @@ class RepositoryTest
     system.log
 
   override implicit val patienceConfig: PatienceConfig =
-    PatienceConfig(Span(30, Seconds), Span(250, Millis))
+    PatienceConfig(Span(5, Seconds), Span(250, Millis))
 
 //  override protected def beforeAll(): Unit = {
 //    CassandraLauncher.start(
