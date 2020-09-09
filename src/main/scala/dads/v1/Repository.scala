@@ -38,7 +38,7 @@ trait Repository {
 object Repository {
 
   val keyspace: String =
-    "dads"
+    "aurum"
 
   def apply(implicit system: ActorSystem[_]): Repository =
     new Repository {

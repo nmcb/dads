@@ -6,3 +6,6 @@
 # intellij idea specifics
 .idea/
 *.iml
+
+# mac os x specifics
+.DS_store

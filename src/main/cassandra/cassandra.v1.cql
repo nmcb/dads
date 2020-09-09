@@ -2,10 +2,10 @@
  * This is free and unencumbered software released into the public domain.
  */
 
-use dads;
+use aurum;
 
--- Cumulative tables.
-create table day (     // Existing
+-- Cumulative tables
+create table if not exists day  (
     source  uuid,
     rowtime timestamp, -- day
     coltime timestamp, -- hour
@@ -13,7 +13,7 @@ create table day (     // Existing
     primary key ((source, rowtime), coltime)
 );
 
-create table month (   // Existing
+create table if not exists month (
     source  uuid,
     rowtime timestamp, -- month
     coltime timestamp, -- day
@@ -21,7 +21,7 @@ create table month (   // Existing
     primary key ((source, rowtime), coltime)
 );
 
-create table year_week ( // Existing
+create table if not exists year_week (
     source  uuid,
     rowtime timestamp,   -- year
     coltime timestamp,   -- (start of) week
@@ -29,7 +29,7 @@ create table year_week ( // Existing
     primary key ((source, rowtime), coltime)
 );
 
-create table year (    // Existing
+create table if not exists year (
     source  uuid,
     rowtime timestamp, -- year
     coltime timestamp, -- month
@@ -37,7 +37,7 @@ create table year (    // Existing
     primary key ((source, rowtime), coltime)
 );
 
-create table forever ( // Existing
+create table if not exists forever (
     source  uuid,
     rowtime timestamp, -- 1 jan 1970, epoch time 0
     coltime timestamp, -- year
@@ -45,13 +45,16 @@ create table forever ( // Existing
     primary key ((source, rowtime), coltime)
 );
 
--- Realtime
-create table realtime_decimal ( -- NOT existing
+use dads_v1;
+
+-- Realtime tables
+create table realtime_decimal (
     source uuid,
     time   timestamp,
     value  decimal,
     primary key (source, time)
 ) with default_time_to_live = 3600;
+
 -- Precaution only, TTL should be included with an INSERT/UPDATE.
 -- Taken from AP StorageProfile.realTimeTTL (Postgres)
 
@@ -66,11 +69,11 @@ create table realtime_decimal ( -- NOT existing
 
 -- Possible table to facilitate state recovery and/or store the last known values.
 -- Can be changed depending on needs.
-create table source_state_decimal ( -- Not existing.
-    source            uuid,
-    last_seq_nr       int,
-    last_value        decimal, -- May be null if necessary.
-    last_success_time timestamp, -- May be null if necessary.
-    primary key (source)
-);
+-- create table source_state_decimal (
+--     source            uuid,
+--     last_seq_nr       int,
+--     last_value        decimal,   -- May be null if necessary.
+--     last_success_time timestamp, -- May be null if necessary.
+--     primary key (source)
+-- );
 
