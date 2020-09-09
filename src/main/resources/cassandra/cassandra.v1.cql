@@ -5,7 +5,7 @@
 use aurum;
 
 -- Cumulative tables
-create table if not exists day  (
+create table if not exists day (
     source  uuid,
     rowtime timestamp, -- day
     coltime timestamp, -- hour
