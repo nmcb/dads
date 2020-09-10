@@ -9,18 +9,19 @@ import java.util._
 
 import scala.concurrent._
 import scala.concurrent.duration._
-
 import akka._
 import akka.actor.typed._
 import akka.stream.alpakka.cassandra._
 import akka.stream.alpakka.cassandra.scaladsl._
+import com.datastax.oss.driver.api.core.cql.{PreparedStatement, SimpleStatement, Statement}
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder
 
 case class Measurement(sourceId: UUID, rowTime: Instant, colTime: Instant, value: Long)
 case class RealtimeMeasurement(sourceId: UUID, time: Instant, value: BigDecimal)
 
 trait Repository {
 
-  def insertDay(m: Measurement): Future[Done]
+  def insertDay(m: Measurement): Future[Boolean]
 
   def readDay(sourceId: UUID, rowTime: Instant, colTime: Instant): Future[Option[Measurement]]
 
@@ -36,6 +37,8 @@ trait Repository {
 }
 
 object Repository {
+
+  import QueryBuilder._
 
   val keyspace: String =
     "aurum"
@@ -61,6 +64,14 @@ object Repository {
            | AND   coltime=${m.colTime.toEpochMilli}
          """.stripMargin
 
+      def insertCumulativeStatement(table: String, m: Measurement): SimpleStatement =
+        update(keyspace, table)
+          .increment("value", literal(m.value))
+          .whereColumn("source").isEqualTo(literal(m.sourceId))
+          .whereColumn("rowtime").isEqualTo(literal(m.rowTime.toEpochMilli))
+          .whereColumn("coltime").isEqualTo(literal(m.colTime.toEpochMilli))
+          .build()
+
       def readCumulative(table: String, sourceId: UUID, rowTime: Instant, colTime: Instant): String =
         s""" SELECT source, rowtime, coltime, value
            | FROM   $keyspace.$table
@@ -74,8 +85,14 @@ object Repository {
            | VALUES (${m.sourceId.toString}, ${m.time.toEpochMilli}, ${m.value.toString})
          """.stripMargin
 
-      override def insertDay(measurement: Measurement): Future[Done] =
-        session.executeWrite(insertCumulative("day", measurement))
+      import scala.compat.java8.FutureConverters._
+
+      override def insertDay(measurement: Measurement): Future[Boolean] =
+        session
+          .underlying()
+          .flatMap(ses => toScala(ses.executeAsync(insertCumulativeStatement("day", measurement))))
+          .map(ars => ars.wasApplied())
+//        session.executeWrite(insertCumulative("day", measurement))
 
       override def readDay(sourceId: UUID, rowTime: Instant, colTime: Instant): Future[Option[Measurement]] =
         ???

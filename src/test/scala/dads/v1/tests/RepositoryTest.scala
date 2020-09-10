@@ -55,6 +55,6 @@ class RepositoryTest
   it should "round-trip write-read day measurements" in {
     val repository = Repository(system.toTyped)
     val insert = Future.sequence(fixture.map(m => repository.insertDay(m)))
-    eventually(insert.map(l => assert(l.size == fixture.size)))
+    eventually(insert.map(l => assert(l.forall(_ == true))))
   }
 }

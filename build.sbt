@@ -3,7 +3,7 @@ import Dependencies._
 import Workarounds._
 
 ThisBuild / scalaVersion     := "2.13.3"
-ThisBuild / version          := "0.0.1-SNAPSHOT"
+ThisBuild / version          := "0.1.0"
 ThisBuild / organization     := "nmcb"
 ThisBuild / organizationName := "nmcb"
 
@@ -12,7 +12,8 @@ lazy val dads =
     .configs(IntegrationTest)
     .enablePlugins(AkkaGrpcPlugin, JavaAppPackaging)
     .settings( name                := "dads"
-             , libraryDependencies ++= platformDeps ++ monitoringDeps ++ testDeps ++ bumpGrpcDeps ++ bumpAkkaTestDeps
+             , libraryDependencies ++= platformDeps ++ monitoringDeps ++ testDeps ++ bumpAkkaRuntimeDeps  ++ bumpGrpcDeps
+             , dependencyOverrides ++= bumpAkkaRuntimeDeps ++ bumpGrpcDeps
              , scalacOptions       ++= hygienicScalacOps
              , Defaults.itSettings
              , onPublishMaskDocumentation
