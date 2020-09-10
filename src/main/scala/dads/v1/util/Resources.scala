@@ -11,7 +11,7 @@ import scala.util.control._
 
 object Resources {
 
-  def load(resource: String): String = {
+  def readFile(resource: String): String = {
     var src: BufferedSource = null
     var str: InputStream    = null
     try {

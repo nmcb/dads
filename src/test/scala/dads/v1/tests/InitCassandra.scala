@@ -19,8 +19,8 @@ import scala.util._
 object InitCassandra {
 
   val scripts: Seq[String] =
-    Seq( Resources.load("/cassandra/initialise.local.cql")
-       , Resources.load("/cassandra/cassandra.v1.cql")
+    Seq( Resources.readFile("/cassandra/initialise.local.cql")
+       , Resources.readFile("/cassandra/dads.v1.cql")
        )
 
   def main(args: Array[String]): Unit = {

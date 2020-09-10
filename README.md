@@ -13,8 +13,8 @@ To develop, start a local development environment run:
 To initialise cassandra for local development run:
 
 ```
-% cqlsh -f src/test/resources/cassandra/initialise.local.cql
-% cqlsh -f src/main/resources/cassandra/cassandra.v1.cql
+% cqlsh -f src/main/resources/cassandra/initialise.dev.cql
+% cqlsh -f src/main/resources/cassandra/dads.v1.cql
 ```
 
 To test the local codebase against a local development environment:
@@ -40,8 +40,8 @@ To deploy the application in development (test production locally) run:
 To initialise cassandra for application production run:
 
 ```
-% cqlsh -f src/main/resources/cassandra/initialise.prod.cql
-% cqlsh -f src/main/resources/cassandra/cassandra.v1.cql
+% cqlsh -f src/main/resources/cassandra/initialise.prd.cql
+% cqlsh -f src/main/resources/cassandra/dads.v1.cql
 ```
 
 To deploy in production run:

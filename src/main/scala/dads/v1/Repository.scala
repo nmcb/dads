@@ -7,14 +7,15 @@ package dads.v1
 import java.time._
 import java.util._
 
+import com.datastax.oss.driver.api.core.cql._
+import com.datastax.oss.driver.api.querybuilder._
+
 import scala.concurrent._
-import scala.concurrent.duration._
+
 import akka._
 import akka.actor.typed._
 import akka.stream.alpakka.cassandra._
 import akka.stream.alpakka.cassandra.scaladsl._
-import com.datastax.oss.driver.api.core.cql.{PreparedStatement, SimpleStatement, Statement}
-import com.datastax.oss.driver.api.querybuilder.QueryBuilder
 
 case class Measurement(sourceId: UUID, rowTime: Instant, colTime: Instant, value: Long)
 case class RealtimeMeasurement(sourceId: UUID, time: Instant, value: BigDecimal)
@@ -38,12 +39,16 @@ trait Repository {
 
 object Repository {
 
+  trait Result {
+    def wasApplied: Boolean
+  }
+
   import QueryBuilder._
 
   val keyspace: String =
     "aurum"
 
-  def apply(implicit system: ActorSystem[_]): Repository =
+  def apply(system: ActorSystem[_]): Repository =
     new Repository {
 
       import akka.actor.typed.scaladsl.adapter._
@@ -56,15 +61,7 @@ object Repository {
           .get(system)
           .sessionFor(CassandraSessionSettings())
 
-      def insertCumulative(table: String, m: Measurement): String =
-        s""" UPDATE $keyspace.$table
-           | SET     value=value + ${m.value.toString}
-           | WHERE  source=${m.sourceId.toString}
-           | AND   rowtime=${m.rowTime.toEpochMilli}
-           | AND   coltime=${m.colTime.toEpochMilli}
-         """.stripMargin
-
-      def insertCumulativeStatement(table: String, m: Measurement): SimpleStatement =
+      private def insertCumulative(table: String, m: Measurement): SimpleStatement =
         update(keyspace, table)
           .increment("value", literal(m.value))
           .whereColumn("source").isEqualTo(literal(m.sourceId))
@@ -72,75 +69,36 @@ object Repository {
           .whereColumn("coltime").isEqualTo(literal(m.colTime.toEpochMilli))
           .build()
 
-      def readCumulative(table: String, sourceId: UUID, rowTime: Instant, colTime: Instant): String =
-        s""" SELECT source, rowtime, coltime, value
-           | FROM   $keyspace.$table
-           | WHERE  source=${sourceId.toString}
-           | AND   rowtime=${rowTime.toEpochMilli}
-           | AND   coltime=${colTime.toEpochMilli}
-         """.stripMargin
-
-      def insertRealtime(table: String, m: RealtimeMeasurement): String =
-        s""" INSERT INTO $keyspace.$table(source, time, value)
-           | VALUES (${m.sourceId.toString}, ${m.time.toEpochMilli}, ${m.value.toString})
-         """.stripMargin
-
-      import scala.compat.java8.FutureConverters._
-
       override def insertDay(measurement: Measurement): Future[Boolean] =
-        session
-          .underlying()
-          .flatMap(ses => toScala(ses.executeAsync(insertCumulativeStatement("day", measurement))))
-          .map(ars => ars.wasApplied())
-//        session.executeWrite(insertCumulative("day", measurement))
+        insertCumulative("day", measurement).execAsync.map(_.wasApplied)
 
       override def readDay(sourceId: UUID, rowTime: Instant, colTime: Instant): Future[Option[Measurement]] =
         ???
 
       override def insertMonth(measurement: Measurement): Future[Done] =
-        session.executeWrite(insertCumulative("month", measurement))
+        ???
+//        session.executeWrite(insertCumulative("month", measurement))
 
       override def insertYear(measurement: Measurement): Future[Done] =
-        session.executeWrite(insertCumulative("year", measurement))
+        ???
 
       override def insertYearWeek(measurement: Measurement): Future[Done] =
-        session.executeWrite(insertCumulative("year_week", measurement))
+        ???
 
       override def insertForever(measurement: Measurement): Future[Done] =
-        session.executeWrite(insertCumulative("forever", measurement))
+        ???
 
       override def insertRealtimeDecimal(measurement: RealtimeMeasurement): Future[Done] =
-        session.executeWrite(insertRealtime("realtime_decimal", measurement))
-    }
+        ???
+  }
 
-  def createTables(system: ActorSystem[_]): Unit = {
+  // Utils
 
-    val session: CassandraSession =
-      CassandraSessionRegistry
-        .get(system)
-        .sessionFor(CassandraSessionSettings())
+  implicit class StatementUtil(statement: Statement[_])(implicit session: CassandraSession, executionContext: ExecutionContext) {
 
-    val createKeyspaceIfNotExist =
-      s""" CREATE KEYSPACE IF NOT EXISTS ${keyspace}
-         | WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }
-       """.stripMargin
+    import scala.compat.java8._
 
-    def createCumulativeIfNotExist(table: String) =
-      s""" CREATE TABLE IF NOT EXISTS ${keyspace}.${table} (
-         | source uuid,
-         | rowtime timestamp,
-         | coltime timestamp,
-         | value   counter,
-         | primary key ((source, rowtime), coltime))
-       """.stripMargin
-
-    // OK to block here, main thread
-    Await.ready(session.executeDDL(createKeyspaceIfNotExist), 30.seconds)
-    system.log.info(s"Created keyspace: $keyspace")
-
-    Seq("day", "month", "year_week", "year", "forever").foreach { table =>
-      Await.ready(session.executeDDL(createCumulativeIfNotExist(table)), 30.seconds)
-      system.log.info(s"Created table: $table")
-    }
+    def execAsync: Future[AsyncResultSet] =
+      session.underlying().flatMap(session => FutureConverters.toScala(session.executeAsync(statement)))
   }
 }
