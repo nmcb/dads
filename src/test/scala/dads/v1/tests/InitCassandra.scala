@@ -11,7 +11,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.alpakka.cassandra._
 import akka.stream.alpakka.cassandra.scaladsl._
 import com.typesafe.config._
-import dads.v1.util._
 
 import scala.concurrent._
 import scala.util._

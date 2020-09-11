@@ -11,8 +11,8 @@ class DadsSettings private (config: Config) {
   val realtimeKeyspace: String =
     config.getConfig("cassandra").getString("realtime-keyspace")
 
-  val cumulativeKeyspace: String =
-    config.getConfig("cassandra").getString("cumulative-keyspace")
+  val bucketKeyspace: String =
+    config.getConfig("cassandra").getString("bucket-keyspace")
 }
 
 object DadsSettings {
