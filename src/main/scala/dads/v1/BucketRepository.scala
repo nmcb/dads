@@ -7,12 +7,13 @@ package dads.v1
 import java.time._
 import java.util._
 
+import scala.concurrent._
+
 import com.datastax.oss.driver.api.core.cql._
 import com.datastax.oss.driver.api.querybuilder._
 
-import scala.concurrent._
-
 import akka.actor.typed._
+import akka.stream.scaladsl._
 import akka.stream.alpakka.cassandra._
 import akka.stream.alpakka.cassandra.scaladsl._
 
@@ -20,35 +21,28 @@ trait BucketRepository {
 
   import BucketRepository._
 
-  def addToDayBucket(m: Measurement): Future[Boolean]
+  def addTo(bucketFor: BucketFor)(measurement: Measurement): Future[Unit]
 
-  def readDay(sourceId: UUID, dayStart: Instant, hourStart: Instant): Future[Option[Measurement]]
+  def addToAll(measurement: Measurement): Future[Unit]
 
-  def addToMonthBucket(m: Measurement): Future[Boolean]
-
-  def addToYearBucket(m: Measurement): Future[Boolean]
-
-  def addToWeekYearBucket(m: Measurement): Future[Boolean]
-
-  def addToForeverBucket(m: Measurement): Future[Boolean]
+  def getFrom(bucket: BucketFor)(sourceId: UUID): Future[Long]
 }
 
 object BucketRepository {
 
-  case class Measurement(sourceId: UUID, time: Instant, value: Long)
-
-  trait Result {
-    def wasApplied: Boolean
-  }
-
+  case class Measurement( sourceId : UUID
+                        , instant  : Instant
+                        , value    : Long)
+  import temporal._
   import QueryBuilder._
+  import BucketFor._
 
   val ValueColumn   = "value"
   val SourceColumn  = "source"
   val RowTimeColumn = "rowtime"
   val ColTimeColumn = "coltime"
 
-  def apply(settings: DadsSettings)(system: ActorSystem[_]): BucketRepository =
+  def apply(settings: DadsSettings)(implicit system: ActorSystem[_]): BucketRepository =
     new BucketRepository {
 
       import akka.actor.typed.scaladsl.adapter._
@@ -61,87 +55,99 @@ object BucketRepository {
           .get(system)
           .sessionFor(CassandraSessionSettings())
 
-      def addTo(bucket: BucketFor): SimpleStatement =
-        update(settings.bucketKeyspace, bucket.tableName)
-          .increment(ValueColumn, literal(bucket.measurement.value))
-          .whereColumn(SourceColumn).isEqualTo(literal(bucket.measurement.sourceId))
+      def addTo(bucketFor: BucketFor)(measurement: Measurement): Future[Unit] =
+        update(settings.bucketKeyspace, bucketFor.tableName)
+          .increment(ValueColumn, literal(measurement.value))
+          .whereColumn(SourceColumn).isEqualTo(literal(measurement.sourceId))
+          .whereColumn(RowTimeColumn).isEqualTo(literal(bucketFor.rowTime.toEpochMilli))
+          .whereColumn(ColTimeColumn).isEqualTo(literal(bucketFor.colTime.toEpochMilli))
+          .build()
+          .execAsync
+          .map(toUnit)
+
+      override def addToAll(measurement: Measurement): Future[Unit] =
+        Future.sequence(
+          Seq(Day, Month, Year, WeekYear, Forever)
+            .map(bucket => bucket(measurement.instant))
+            .map(addTo(_)(measurement))
+        ).map(toUnit)
+
+      override def getFrom(bucket: BucketFor)(sourceId: UUID): Future[Long] =
+        selectFrom(settings.bucketKeyspace, bucket.tableName)
+          .column(ValueColumn)
+          .whereColumn(SourceColumn).isEqualTo(literal(sourceId))
           .whereColumn(RowTimeColumn).isEqualTo(literal(bucket.rowTime.toEpochMilli))
           .whereColumn(ColTimeColumn).isEqualTo(literal(bucket.colTime.toEpochMilli))
           .build()
+          .execAsync
+          .map(toOneValue)
 
-      override def addToDayBucket(measurement: Measurement): Future[Boolean] =
-        addTo(BucketFor.Day(measurement)).execAsync.map(_.wasApplied)
+      private def toUnit: Any => Unit =
+        _ => ()
 
-      override def readDay(sourceId: UUID, rowTime: Instant, colTime: Instant): Future[Option[Measurement]] =
-        ???
-
-      override def addToMonthBucket(measurement: Measurement): Future[Boolean] =
-        addTo(BucketFor.Month(measurement)).execAsync.map(_.wasApplied)
-
-      override def addToYearBucket(measurement: Measurement): Future[Boolean] =
-        addTo(BucketFor.Year(measurement)).execAsync.map(_.wasApplied)
-
-      override def addToWeekYearBucket(measurement: Measurement): Future[Boolean] =
-        addTo(BucketFor.WeekYear(measurement)).execAsync.map(_.wasApplied)
-
-      override def addToForeverBucket(measurement: Measurement): Future[Boolean] =
-        addTo(BucketFor.Forever(measurement)).execAsync.map(_.wasApplied)
+      private def toOneValue(rs: Seq[Row]): Long =
+        rs.headOption.getOrElse(throw new RuntimeException("Boom")).getLong(ValueColumn)
   }
 
   // Model
 
   import java.time._
 
-  case class BucketMeasurementRow(sourceId: UUID, rowTime: Instant, colTime: Instant, value: Long)
+  val DayBucketTable      = "day"
+  val MonthBucketTable    = "month"
+  val YearBucketTable     = "year"
+  val WeekYearBucketTable = "week_year"
+  val ForeverBucketTable  = "forever"
 
-  case class BucketFor( tableName: String
-                      , measurement: Measurement
-                      , rowTime: Instant
-                      , colTime: Instant
+  case class BucketFor( instant   : Instant
+                      , rowTime   : Instant
+                      , colTime   : Instant
+                      , tableName : String
                       )
 
   object BucketFor {
 
-    import java.time.temporal._
-
-    private final val UTC = ZoneOffset.UTC
-
-    def apply(table: String)(rowTruncUnit: ChronoUnit)(colTruncUnit: ChronoUnit): Measurement => BucketFor =
-      underlying =>
-        new BucketFor( tableName   = table
-                     , measurement = underlying
-                     , rowTime = LocalDateTime.ofInstant(underlying.time, UTC).truncatedTo(rowTruncUnit).toInstant(UTC)
-                     , colTime = LocalDateTime.ofInstant(underlying.time, UTC).truncatedTo(colTruncUnit).toInstant(UTC)
-                     )
-
-    def Day: Measurement => BucketFor =
-      BucketFor("day")(ChronoUnit.DAYS)(ChronoUnit.HOURS)
-
-    def Month: Measurement => BucketFor =
-      BucketFor("month")(ChronoUnit.MONTHS)(ChronoUnit.DAYS)
-
-    def Year: Measurement => BucketFor =
-      BucketFor("year")(ChronoUnit.YEARS)(ChronoUnit.MONTHS)
-
-    def WeekYear: Measurement => BucketFor =
-      BucketFor("week_year")(ChronoUnit.YEARS)(ChronoUnit.WEEKS)
-
-    def Forever: Measurement =>  BucketFor =
-      underlying => new BucketFor(
-          tableName   = "forever"
-        , measurement = underlying
-        , rowTime     = Instant.EPOCH
-        , colTime     = LocalDateTime.ofInstant(underlying.time, UTC).truncatedTo(ChronoUnit.YEARS).toInstant(UTC)
+    def apply(rowTruncUnit: ChronoUnit)(colTruncUnit: ChronoUnit)(table: String): Instant => BucketFor =
+      instant => BucketFor(
+          instant = instant
+        , rowTime = truncatedTo(rowTruncUnit)(instant)
+        , colTime = truncatedTo(colTruncUnit)(instant)
+        , tableName = table
       )
+
+    def Day: Instant => BucketFor =
+      BucketFor(ChronoUnit.DAYS)(ChronoUnit.HOURS)(DayBucketTable)
+
+    def Month: Instant => BucketFor =
+      BucketFor(ChronoUnit.MONTHS)(ChronoUnit.DAYS)(MonthBucketTable)
+
+    def Year: Instant => BucketFor =
+      BucketFor(ChronoUnit.YEARS)(ChronoUnit.MONTHS)(YearBucketTable)
+
+    def WeekYear: Instant => BucketFor =
+      BucketFor(ChronoUnit.YEARS)(ChronoUnit.WEEKS)(WeekYearBucketTable)
+
+    def Forever: Instant => BucketFor =
+      instant =>
+        BucketFor(
+            instant   = instant
+          , rowTime   = Instant.EPOCH
+          , colTime   = truncatedTo(ChronoUnit.YEARS)(instant)
+          , tableName = ForeverBucketTable
+        )
   }
 
   // Utils
 
-  implicit class StatementUtil(statement: Statement[_])(implicit session: CassandraSession, executionContext: ExecutionContext) {
+  implicit class StatementUtil(statement: Statement[_])(implicit session: CassandraSession, system: ActorSystem[_]) {
 
-    import scala.compat.java8._
-
-    def execAsync: Future[AsyncResultSet] =
-      session.underlying().flatMap(session => FutureConverters.toScala(session.executeAsync(statement)))
+    def execAsync: Future[Seq[Row]] =
+      session.select(statement).runWith(Sink.seq)
   }
+
+  private final val UTC: ZoneOffset =
+    ZoneOffset.UTC
+
+  private val truncatedTo: ChronoUnit => Instant => Instant =
+    chronoUnit => underlying => LocalDateTime.ofInstant(underlying, UTC).truncatedTo(chronoUnit).toInstant(UTC)
 }
