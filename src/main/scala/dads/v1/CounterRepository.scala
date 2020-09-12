@@ -27,19 +27,19 @@ object CounterRepository {
   import ChronoUnit._
   import TemporalAdjusters._
 
-  val TimeZoneOffset: java.time.ZoneOffset = java.time.ZoneOffset.UTC
+  final val TimeZoneOffset: java.time.ZoneOffset = java.time.ZoneOffset.UTC
 
-  val FirstDayOfWeek: java.time.DayOfWeek  = DayOfWeek.MONDAY
+  final val FirstDayOfWeek: java.time.DayOfWeek  = DayOfWeek.MONDAY
 
   case class Measurement(  sourceId     : UUID
                          , instant    : Instant
                          , adjustment : Long
                         )
 
-  val CounterColumn = "value"
-  val SourceColumn  = "source"
-  val RowTimeColumn = "rowtime"
-  val ColTimeColumn = "coltime"
+  final val CounterColumn = "value"
+  final val SourceColumn  = "source"
+  final val RowTimeColumn = "rowtime"
+  final val ColTimeColumn = "coltime"
 
   def apply(settings: DadsSettings)(implicit system: ActorSystem[_]): CounterRepository =
     new CounterRepository {
@@ -54,11 +54,11 @@ object CounterRepository {
           .get(system)
           .sessionFor(CassandraSessionSettings())
 
-      override def addToAll(measurement: Measurement): Future[Done] =
+      def addToAll(measurement: Measurement): Future[Done] =
         Future.sequence(All.map(counterOn => addTo(counterOn)(measurement))).map(toDone)
 
       def addTo(counterOn: CounterOn)(measurement: Measurement): Future[Done] = {
-        val counter: Counter = counterOn(measurement.instant)
+        val counter = counterOn(measurement.instant)
 
         update(settings.counterKeyspace, counter.tableName)
           .increment(CounterColumn, literal(measurement.adjustment))
@@ -69,7 +69,7 @@ object CounterRepository {
           .updateAsync
       }
 
-      override def getFrom(counterOn: CounterOn)(sourceId: UUID)(instant: Instant): Future[Long] = {
+      def getFrom(counterOn: CounterOn)(sourceId: UUID)(instant: Instant): Future[Long] = {
         val counter = counterOn(instant)
 
         selectFrom(settings.counterKeyspace, counter.tableName)
@@ -81,75 +81,71 @@ object CounterRepository {
           .whereColumn(RowTimeColumn).isEqualTo(literal(counter.rowTime.toEpochMilli))
           .whereColumn(ColTimeColumn).isEqualTo(literal(counter.colTime.toEpochMilli))
           .build()
-          .selectAsync
-          .map(toOneCounter)
+          .selectOptionAsync
+          .map(toCounter)
       }
 
       private def toDone: Any => Done =
         _ => Done
 
-      private def toOneCounter(rs: Seq[Row]): Long =
-        rs.headOption
-          .map(_.getLong(CounterColumn))
-          .getOrElse(0)
+      private def toCounter(rs: Option[Row]): Long =
+        rs.map(_.getLong(CounterColumn)).getOrElse(0)
   }
 
   // MODEL
 
-  trait Counter {
-    def rowTime: Instant
-    def colTime: Instant
-    def tableName: String
+  trait CounterInstance {
+    def rowTime   : Instant
+    def colTime   : Instant
+    def tableName : String
   }
 
-  type CounterOn = Instant => Counter
+  type CounterOn = Instant => CounterInstance
+
+  private case class
+    CounterFor( rowTime   : Instant
+              , colTime   : Instant
+              , tableName : String
+              ) extends CounterInstance
 
   object CounterOn {
 
-    val DayCounterTable       = "day"
-    val MonthCounterTable     = "month"
-    val MonthYearCounterTable = "year"
-    val WeekYearCounterTable  = "year_week"
-    val AlwaysCounterTable    = "forever"
-
-    private case class
-      CounterFor(  instant   : Instant
-                 , rowTime   : Instant
-                 , colTime   : Instant
-                 , tableName : String
-               ) extends Counter
+    final val DayCounterTable       = "day"
+    final val MonthCounterTable     = "month"
+    final val MonthYearCounterTable = "year"
+    final val WeekYearCounterTable  = "year_week"
+    final val AlwaysCounterTable    = "forever"
 
     private def apply(rowTimeUnit: ChronoUnit, colTimeUnit: ChronoUnit, table: String): CounterOn =
-      instant => CounterFor(
-          instant = instant
-        , rowTime = truncatedTo(rowTimeUnit)(instant)
-        , colTime = truncatedTo(colTimeUnit)(instant)
-        , tableName = table
-      )
+      instant =>
+        CounterFor( rowTime   = truncatedTo(rowTimeUnit)(instant)
+                  , colTime   = truncatedTo(colTimeUnit)(instant)
+                  , tableName = table
+                  )
 
-    def Day: CounterOn =
+    val Days: CounterOn =
       CounterOn(DAYS, HOURS, DayCounterTable)
 
-    def Month: CounterOn =
+    val Months: CounterOn =
       CounterOn(MONTHS, DAYS, MonthCounterTable)
 
-    def MonthYear: CounterOn =
+    val MonthYears: CounterOn =
       CounterOn(YEARS, MONTHS, MonthYearCounterTable)
 
-    def WeekYear: CounterOn =
+    val WeekYears: CounterOn =
       CounterOn(YEARS, WEEKS, WeekYearCounterTable)
 
-    def Always: CounterOn =
+    val SinceEpoch: CounterOn =
       instant =>
-        CounterFor(
-            instant   = instant
-          , rowTime   = Instant.EPOCH
-          , colTime   = truncatedTo(YEARS)(instant)
-          , tableName = AlwaysCounterTable
-        )
+        CounterFor( rowTime   = Instant.EPOCH
+                  , colTime   = truncatedTo(YEARS)(instant)
+                  , tableName = AlwaysCounterTable
+                  )
 
-    def All: Seq[CounterOn] =
-      Seq(Day, Month, MonthYear, WeekYear, Always)
+    val All: Seq[CounterOn] =
+      Seq(Days, Months, MonthYears, WeekYears, SinceEpoch)
+
+    // LOGIC
 
     def truncatedTo(chronoUnit: ChronoUnit)(instant: Instant): Instant = {
 
@@ -175,6 +171,9 @@ object CounterRepository {
   // UTILS
 
   implicit class StatementUtil(statement: Statement[_])(implicit session: CassandraSession, system: ActorSystem[_]) {
+
+    def selectOptionAsync: Future[Option[Row]] =
+      session.select(statement).runWith(Sink.headOption)
 
     def selectAsync: Future[Seq[Row]] =
       session.select(statement).runWith(Sink.seq)

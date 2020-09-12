@@ -78,11 +78,11 @@ class CounterRepositoryTest
 
     eventually {
       Future.sequence(
-        Seq( tripRoundWith(CounterOn.Day)
-           , tripRoundWith(CounterOn.Month)
-           , tripRoundWith(CounterOn.MonthYear)
-           , tripRoundWith(CounterOn.WeekYear)
-           , tripRoundWith(CounterOn.Always)
+        Seq( tripRoundWith(CounterOn.Days)
+           , tripRoundWith(CounterOn.Months)
+           , tripRoundWith(CounterOn.MonthYears)
+           , tripRoundWith(CounterOn.WeekYears)
+           , tripRoundWith(CounterOn.SinceEpoch)
         ).map(tripRoundWithAll => tripRoundWithAll(now))
       ).map(toSucceeded)
     }
