@@ -11,8 +11,8 @@ class DadsSettings private (config: Config) {
   lazy val realtimeKeyspace: String =
     config.getConfig("cassandra").getString("realtime-keyspace")
 
-  lazy val bucketKeyspace: String =
-    config.getConfig("cassandra").getString("bucket-keyspace")
+  lazy val counterKeyspace: String =
+    config.getConfig("cassandra").getString("counter-keyspace")
 
 }
 

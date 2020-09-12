@@ -18,6 +18,6 @@ class DadsSettingsTest
     val settings = DadsSettings()
 
     settings.realtimeKeyspace   shouldBe "dads_v1"
-    settings.bucketKeyspace shouldBe "aurum"
+    settings.counterKeyspace shouldBe "aurum"
   }
 }
