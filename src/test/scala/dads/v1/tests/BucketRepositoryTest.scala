@@ -13,17 +13,17 @@ import akka.actor._
 import akka.event._
 import akka.actor.typed.scaladsl.adapter._
 
-import org.scalatest.concurrent._
 import org.scalatest._
+import org.scalatest.concurrent._
+import org.scalatest.flatspec._
 import org.scalatest.matchers.should._
 import org.scalatest.time._
 
-
 class BucketRepositoryTest
-  extends flatspec.AsyncFlatSpec
+  extends AsyncFlatSpec
     with Matchers
     with TimeLimits
-    with BeforeAndAfterAll
+    with BeforeAndAfter
     with Eventually {
 
   import BucketRepository._
@@ -40,8 +40,7 @@ class BucketRepositoryTest
   val settings: DadsSettings =
     DadsSettings()
 
-  override protected def afterAll(): Unit = {
-    super.afterAll()
+  after {
     system.terminate()
   }
 
