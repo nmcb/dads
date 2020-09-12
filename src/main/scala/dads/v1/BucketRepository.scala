@@ -22,11 +22,11 @@ trait BucketRepository {
 
   import BucketRepository._
 
-  def addTo(bucketFor: BucketFor)(measurement: Measurement): Future[Done]
+  def addTo(bucketOn: BucketOn)(measurement: Measurement): Future[Done]
 
   def addToAll(measurement: Measurement): Future[Done]
 
-  def getFrom(bucket: BucketFor)(sourceId: UUID): Future[Long]
+  def getFrom(bucket: BucketOn)(sourceId: UUID)(instant: Instant): Future[Long]
 }
 
 object BucketRepository {
@@ -34,11 +34,13 @@ object BucketRepository {
   import temporal._
 
   import QueryBuilder._
-  import BucketFor._
+  import BucketOn._
   import ChronoUnit._
   import TemporalAdjusters._
 
   val TimeZoneOffset: java.time.ZoneOffset = java.time.ZoneOffset.UTC
+
+  val FirstDayOfWeek: java.time.DayOfWeek  = DayOfWeek.MONDAY
 
   case class Measurement( sourceId : UUID
                         , instant  : Instant
@@ -63,28 +65,24 @@ object BucketRepository {
           .get(system)
           .sessionFor(CassandraSessionSettings())
 
-      def addTo(bucketFor: BucketFor)(measurement: Measurement): Future[Done] =
-        update(settings.bucketKeyspace, bucketFor.tableName)
+      def addTo(bucketOn: BucketOn)(measurement: Measurement): Future[Done] =
+        update(settings.bucketKeyspace, bucketOn(measurement.instant).tableName)
           .increment(ValueColumn, literal(measurement.value))
           .whereColumn(SourceColumn).isEqualTo(literal(measurement.sourceId))
-          .whereColumn(RowTimeColumn).isEqualTo(literal(bucketFor.rowTime.toEpochMilli))
-          .whereColumn(ColTimeColumn).isEqualTo(literal(bucketFor.colTime.toEpochMilli))
+          .whereColumn(RowTimeColumn).isEqualTo(literal(bucketOn(measurement.instant).rowTime.toEpochMilli))
+          .whereColumn(ColTimeColumn).isEqualTo(literal(bucketOn(measurement.instant).colTime.toEpochMilli))
           .build()
           .updateAsync
 
       override def addToAll(measurement: Measurement): Future[Done] =
-        Future.sequence(
-          Seq(Day, Month, Year, WeekYear, Forever)
-            .map(bucket => bucket(measurement.instant))
-            .map(addTo(_)(measurement))
-        ).map(toDone)
+        Future.sequence(All.map(bucketOn => addTo(bucketOn)(measurement))).map(toDone)
 
-      override def getFrom(bucket: BucketFor)(sourceId: UUID): Future[Long] =
-        selectFrom(settings.bucketKeyspace, bucket.tableName)
+      override def getFrom(bucketOn: BucketOn)(sourceId: UUID)(instant: Instant): Future[Long] =
+        selectFrom(settings.bucketKeyspace, bucketOn(instant).tableName)
           .column(ValueColumn)
           .whereColumn(SourceColumn).isEqualTo(literal(sourceId))
-          .whereColumn(RowTimeColumn).isEqualTo(literal(bucket.rowTime.toEpochMilli))
-          .whereColumn(ColTimeColumn).isEqualTo(literal(bucket.colTime.toEpochMilli))
+          .whereColumn(RowTimeColumn).isEqualTo(literal(bucketOn(instant).rowTime.toEpochMilli))
+          .whereColumn(ColTimeColumn).isEqualTo(literal(bucketOn(instant).colTime.toEpochMilli))
           .build()
           .selectAsync
           .map(toOneValue)
@@ -96,27 +94,33 @@ object BucketRepository {
         rs.headOption.getOrElse(throw new RuntimeException("Boom")).getLong(ValueColumn)
   }
 
-  // Model
+  // MODEL
 
-  case class
-    BucketFor( instant   : Instant
-             , rowTime   : Instant
-             , colTime   : Instant
-             , tableName : String
-             )
+  trait Bucket {
+    def rowTime: Instant
+    def colTime: Instant
+    def tableName: String
+  }
 
-  type BucketOn = Instant => BucketFor
+  type BucketOn = Instant => Bucket
 
-  object BucketFor {
+  object BucketOn {
 
-    val DayHourBucketTable   = "day"
-    val MonthDayBucketTable  = "month"
-    val YearMonthBucketTable = "year"
-    val YearWeekBucketTable  = "year_week"
-    val ForeverBucketTable   = "forever"
+    val DayBucketTable       = "day"
+    val MonthBucketTable     = "month"
+    val MonthYearBucketTable = "year"
+    val WeekYearBucketTable  = "year_week"
+    val AlwaysBucketTable    = "forever"
+
+    private case class
+      BucketFor( instant   : Instant
+               , rowTime   : Instant
+               , colTime   : Instant
+               , tableName : String
+               ) extends Bucket
 
     private def apply(rowTimeUnit: ChronoUnit, colTimeUnit: ChronoUnit, table: String): BucketOn =
-      instant => new BucketFor(
+      instant => BucketFor(
           instant = instant
         , rowTime = truncatedTo(rowTimeUnit)(instant)
         , colTime = truncatedTo(colTimeUnit)(instant)
@@ -124,46 +128,51 @@ object BucketRepository {
       )
 
     def Day: BucketOn =
-      BucketFor(DAYS, HOURS, DayHourBucketTable)
+      BucketOn(DAYS, HOURS, DayBucketTable)
 
     def Month: BucketOn =
-      BucketFor(MONTHS, DAYS, MonthDayBucketTable)
+      BucketOn(MONTHS, DAYS, MonthBucketTable)
 
-    def Year: BucketOn =
-      BucketFor(YEARS, MONTHS, YearMonthBucketTable)
+    def MonthYear: BucketOn =
+      BucketOn(YEARS, MONTHS, MonthYearBucketTable)
 
     def WeekYear: BucketOn =
-      BucketFor(YEARS, WEEKS, YearWeekBucketTable)
+      BucketOn(YEARS, WEEKS, WeekYearBucketTable)
 
-    def Forever: BucketOn =
+    def Always: BucketOn =
       instant =>
-        new BucketFor(
+        BucketFor(
             instant   = instant
           , rowTime   = Instant.EPOCH
           , colTime   = truncatedTo(YEARS)(instant)
-          , tableName = ForeverBucketTable
+          , tableName = AlwaysBucketTable
         )
+
+    def All: Seq[BucketOn] =
+      Seq(Day, Month, MonthYear, WeekYear, Always)
 
     def truncatedTo(chronoUnit: ChronoUnit)(instant: Instant): Instant = {
 
-      def shadow(chronoUnit: ChronoUnit)(localDateTime: LocalDateTime): LocalDateTime =
+      def delegate(chronoUnit: ChronoUnit, instant: LocalDateTime): LocalDateTime =
         chronoUnit match {
           case YEARS  =>
-            localDateTime.truncatedTo(DAYS).`with`(firstDayOfYear())
+            instant.truncatedTo(DAYS).`with`(firstDayOfYear())
           case MONTHS =>
-            localDateTime.truncatedTo(DAYS).`with`(firstDayOfMonth())
+            instant.truncatedTo(DAYS).`with`(firstDayOfMonth())
           case WEEKS  =>
-            val today = localDateTime.truncatedTo(DAYS)
-            today.minusDays(today.getDayOfWeek().getValue() - DayOfWeek.MONDAY.getValue())
+            val today = instant.truncatedTo(DAYS)
+            today.minusDays(today.getDayOfWeek().getValue() - FirstDayOfWeek.getValue())
           case _  =>
-            localDateTime.truncatedTo(chronoUnit)
+            instant.truncatedTo(chronoUnit)
         }
 
-      shadow(chronoUnit)(LocalDateTime.ofInstant(instant, TimeZoneOffset)).toInstant(TimeZoneOffset)
+      val shadowed = LocalDateTime.ofInstant(instant, TimeZoneOffset)
+      val shadow   = delegate(chronoUnit, shadowed)
+      shadow.toInstant(TimeZoneOffset)
     }
   }
 
-  // Utils
+  // UTILS
 
   implicit class StatementUtil(statement: Statement[_])(implicit session: CassandraSession, system: ActorSystem[_]) {
 

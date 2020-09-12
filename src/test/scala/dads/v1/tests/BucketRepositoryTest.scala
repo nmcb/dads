@@ -9,17 +9,16 @@ import java.time._
 import java.util.UUID
 
 import scala.concurrent._
+
 import akka.actor._
 import akka.event._
 import akka.actor.typed.scaladsl.adapter._
-import dads.v1.BucketRepository
+
 import org.scalatest._
 import org.scalatest.concurrent._
 import org.scalatest.flatspec._
 import org.scalatest.matchers.should._
 import org.scalatest.time._
-
-import scala.util.{Failure, Success}
 
 class BucketRepositoryTest
   extends AsyncFlatSpec
@@ -29,7 +28,6 @@ class BucketRepositoryTest
     with Eventually {
 
   import BucketRepository._
-  import BucketFor._
 
   override implicit val patienceConfig: PatienceConfig =
     PatienceConfig(Span(3, Seconds), Span(250, Millis))
@@ -66,32 +64,35 @@ class BucketRepositoryTest
     system.terminate()
   }
 
-  it should "round-trip writing/reading measurements in all buckets" in {
-
+  it should "round-trip addTo/getFrom measurements for all buckets" in {
 
     def assertRoundTrip[A](transformation: Measurement => A)(output: Seq[A]): Assertion =
       assert(output.toSet === fixture.map(transformation).toSet)
 
-    def tripRoundWith(bucketOn: BucketOn): Instant => Future[Assertion] =
-      instant => for {
-        _     <- withFixture(m => repository.addTo(bucketOn(m.instant))(m))
-        found <- withFixture(m => repository.getFrom(bucketOn(instant))(m.sourceId))
-      } yield assertRoundTrip(_.value)(found)
+    def tripRoundWith[A](bucketOn: BucketOn): Instant => Future[Seq[Long]] =
+      instant =>
+        withFixture { m =>
+          for {
+            _ <- repository.addTo(bucketOn)(m)
+            r <- repository.getFrom(bucketOn)(m.sourceId)(instant)
+          } yield r
+      }
 
     eventually {
-      Future.sequence(Seq(
-          tripRoundWith(BucketFor.Day)(now)
-        , tripRoundWith(BucketFor.Month)(now)
-        , tripRoundWith(BucketFor.Year)(now)
-        , tripRoundWith(BucketFor.WeekYear)(now)
-        , tripRoundWith(BucketFor.Forever)(now)
-      )).map(toSucceeded)
+      Future.sequence(
+        Seq( tripRoundWith(BucketOn.Day)
+           , tripRoundWith(BucketOn.Month)
+           , tripRoundWith(BucketOn.MonthYear)
+           , tripRoundWith(BucketOn.WeekYear)
+           , tripRoundWith(BucketOn.Always)
+        ).map(tripRoundWithAll => tripRoundWithAll(now))
+      ).map(results => assertRoundTrip(_.value)(results.flatten))
     }
   }
 
-  // Utils
+  // utiLSS
 
-  /* failed test are raised exceptions */
+  /* failed tests raise exceptions */
   val toSucceeded: Seq[Assertion] => Assertion =
     _ => succeed
 }
