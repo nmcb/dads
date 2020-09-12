@@ -61,7 +61,7 @@ class BucketRepositoryTest
   it should "round-trip writing/reading measurements in the day bucket" in {
     val repository = BucketRepository(settings)(system.toTyped)
 
-    eventually(for {
+    eventually( for {
       added <- Future.sequence(fixture.map(m => repository.addTo(BucketFor.Day(m.instant))(m)))
       found <- Future.sequence(fixture.map(m => repository.getFrom(BucketFor.Day(now))(m.sourceId)))
       if (added.size == fixture.size && found.toSet == fixture.map(_.value).toSet)

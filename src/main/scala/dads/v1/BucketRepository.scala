@@ -12,6 +12,7 @@ import scala.concurrent._
 import com.datastax.oss.driver.api.core.cql._
 import com.datastax.oss.driver.api.querybuilder._
 
+import akka._
 import akka.actor.typed._
 import akka.stream.scaladsl._
 import akka.stream.alpakka.cassandra._
@@ -21,9 +22,9 @@ trait BucketRepository {
 
   import BucketRepository._
 
-  def addTo(bucketFor: BucketFor)(measurement: Measurement): Future[Unit]
+  def addTo(bucketFor: BucketFor)(measurement: Measurement): Future[Done]
 
-  def addToAll(measurement: Measurement): Future[Unit]
+  def addToAll(measurement: Measurement): Future[Done]
 
   def getFrom(bucket: BucketFor)(sourceId: UUID): Future[Long]
 }
@@ -55,22 +56,21 @@ object BucketRepository {
           .get(system)
           .sessionFor(CassandraSessionSettings())
 
-      def addTo(bucketFor: BucketFor)(measurement: Measurement): Future[Unit] =
+      def addTo(bucketFor: BucketFor)(measurement: Measurement): Future[Done] =
         update(settings.bucketKeyspace, bucketFor.tableName)
           .increment(ValueColumn, literal(measurement.value))
           .whereColumn(SourceColumn).isEqualTo(literal(measurement.sourceId))
           .whereColumn(RowTimeColumn).isEqualTo(literal(bucketFor.rowTime.toEpochMilli))
           .whereColumn(ColTimeColumn).isEqualTo(literal(bucketFor.colTime.toEpochMilli))
           .build()
-          .execAsync
-          .map(toUnit)
+          .updateAsync
 
-      override def addToAll(measurement: Measurement): Future[Unit] =
+      override def addToAll(measurement: Measurement): Future[Done] =
         Future.sequence(
           Seq(Day, Month, Year, WeekYear, Forever)
             .map(bucket => bucket(measurement.instant))
             .map(addTo(_)(measurement))
-        ).map(toUnit)
+        ).map(toDone)
 
       override def getFrom(bucket: BucketFor)(sourceId: UUID): Future[Long] =
         selectFrom(settings.bucketKeyspace, bucket.tableName)
@@ -79,11 +79,11 @@ object BucketRepository {
           .whereColumn(RowTimeColumn).isEqualTo(literal(bucket.rowTime.toEpochMilli))
           .whereColumn(ColTimeColumn).isEqualTo(literal(bucket.colTime.toEpochMilli))
           .build()
-          .execAsync
+          .selectAsync
           .map(toOneValue)
 
-      private def toUnit: Any => Unit =
-        _ => ()
+      private def toDone: Any => Done =
+        _ => Done
 
       private def toOneValue(rs: Seq[Row]): Long =
         rs.headOption.getOrElse(throw new RuntimeException("Boom")).getLong(ValueColumn)
@@ -91,27 +91,26 @@ object BucketRepository {
 
   // Model
 
-  import java.time._
-
-  val DayBucketTable      = "day"
-  val MonthBucketTable    = "month"
-  val YearBucketTable     = "year"
-  val WeekYearBucketTable = "week_year"
-  val ForeverBucketTable  = "forever"
-
-  case class BucketFor( instant   : Instant
-                      , rowTime   : Instant
-                      , colTime   : Instant
-                      , tableName : String
-                      )
+  case class
+    BucketFor( instant   : Instant
+             , rowTime   : Instant
+             , colTime   : Instant
+             , tableName : String
+             )
 
   object BucketFor {
 
-    def apply(rowTruncUnit: ChronoUnit)(colTruncUnit: ChronoUnit)(table: String): Instant => BucketFor =
-      instant => BucketFor(
+    val DayBucketTable      = "day"
+    val MonthBucketTable    = "month"
+    val YearBucketTable     = "year"
+    val WeekYearBucketTable = "week_year"
+    val ForeverBucketTable  = "forever"
+
+    private def apply(rowTimeUnit: ChronoUnit)(colTimeUnit: ChronoUnit)(table: String): Instant => BucketFor =
+      instant => new BucketFor(
           instant = instant
-        , rowTime = truncatedTo(rowTruncUnit)(instant)
-        , colTime = truncatedTo(colTruncUnit)(instant)
+        , rowTime = truncatedTo(rowTimeUnit)(instant)
+        , colTime = truncatedTo(colTimeUnit)(instant)
         , tableName = table
       )
 
@@ -129,25 +128,29 @@ object BucketRepository {
 
     def Forever: Instant => BucketFor =
       instant =>
-        BucketFor(
+        new BucketFor(
             instant   = instant
           , rowTime   = Instant.EPOCH
           , colTime   = truncatedTo(ChronoUnit.YEARS)(instant)
           , tableName = ForeverBucketTable
         )
+
+    private final val UTC: ZoneOffset =
+      ZoneOffset.UTC
+
+    private final val truncatedTo: ChronoUnit => Instant => Instant =
+      chronoUnit => instant =>
+        LocalDateTime.ofInstant(instant, UTC).truncatedTo(chronoUnit).toInstant(UTC)
   }
 
   // Utils
 
   implicit class StatementUtil(statement: Statement[_])(implicit session: CassandraSession, system: ActorSystem[_]) {
 
-    def execAsync: Future[Seq[Row]] =
+    def selectAsync: Future[Seq[Row]] =
       session.select(statement).runWith(Sink.seq)
+
+    def updateAsync: Future[Done] =
+      session.executeWrite(statement)
   }
-
-  private final val UTC: ZoneOffset =
-    ZoneOffset.UTC
-
-  private val truncatedTo: ChronoUnit => Instant => Instant =
-    chronoUnit => underlying => LocalDateTime.ofInstant(underlying, UTC).truncatedTo(chronoUnit).toInstant(UTC)
 }
