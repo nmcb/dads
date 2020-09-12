@@ -4,7 +4,7 @@ Provides a measurement store.
 
 ### Publish and Deploy in Development
 
-To develop, start a local development environment run:
+To develop, start a local development environment:
 
 ```
 % docker-compose -f docker-dev.yml up

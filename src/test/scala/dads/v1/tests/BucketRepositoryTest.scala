@@ -12,12 +12,14 @@ import scala.concurrent._
 import akka.actor._
 import akka.event._
 import akka.actor.typed.scaladsl.adapter._
-
+import dads.v1.BucketRepository
 import org.scalatest._
 import org.scalatest.concurrent._
 import org.scalatest.flatspec._
 import org.scalatest.matchers.should._
 import org.scalatest.time._
+
+import scala.util.{Failure, Success}
 
 class BucketRepositoryTest
   extends AsyncFlatSpec
@@ -27,6 +29,7 @@ class BucketRepositoryTest
     with Eventually {
 
   import BucketRepository._
+  import BucketFor._
 
   override implicit val patienceConfig: PatienceConfig =
     PatienceConfig(Span(3, Seconds), Span(250, Millis))
@@ -40,14 +43,10 @@ class BucketRepositoryTest
   val settings: DadsSettings =
     DadsSettings()
 
-  after {
-    system.terminate()
-  }
-
   val now: Instant =
     Instant.now
 
-  val fixture: List[Measurement] =
+  val fixture: Seq[Measurement] =
     List( Measurement(UUID.randomUUID, now, 666L)
         , Measurement(UUID.randomUUID, now, 667L)
         , Measurement(UUID.randomUUID, now, 668L)
@@ -55,15 +54,44 @@ class BucketRepositoryTest
         , Measurement(UUID.randomUUID, now, 670L)
         )
 
-  behavior of "Repository"
+  def withFixture[A](f: Measurement => Future[A]): Future[Seq[A]] =
+    Future.sequence(fixture.map(f))
 
-  it should "round-trip writing/reading measurements in the day bucket" in {
-    val repository = BucketRepository(settings)(system.toTyped)
+  behavior of "BucketRepository"
 
-    eventually( for {
-      added <- Future.sequence(fixture.map(m => repository.addTo(BucketFor.Day(m.instant))(m)))
-      found <- Future.sequence(fixture.map(m => repository.getFrom(BucketFor.Day(now))(m.sourceId)))
-      if (added.size == fixture.size && found.toSet == fixture.map(_.value).toSet)
-    } yield succeed)
+  val repository: BucketRepository =
+    BucketRepository(settings)(system.toTyped)
+
+  after {
+    system.terminate()
   }
+
+  it should "round-trip writing/reading measurements in all buckets" in {
+
+
+    def assertRoundTrip[A](transformation: Measurement => A)(output: Seq[A]): Assertion =
+      assert(output.toSet === fixture.map(transformation).toSet)
+
+    def tripRoundWith(bucketOn: BucketOn): Instant => Future[Assertion] =
+      instant => for {
+        _     <- withFixture(m => repository.addTo(bucketOn(m.instant))(m))
+        found <- withFixture(m => repository.getFrom(bucketOn(instant))(m.sourceId))
+      } yield assertRoundTrip(_.value)(found)
+
+    eventually {
+      Future.sequence(Seq(
+          tripRoundWith(BucketFor.Day)(now)
+        , tripRoundWith(BucketFor.Month)(now)
+        , tripRoundWith(BucketFor.Year)(now)
+        , tripRoundWith(BucketFor.WeekYear)(now)
+        , tripRoundWith(BucketFor.Forever)(now)
+      )).map(toSucceeded)
+    }
+  }
+
+  // Utils
+
+  /* failed test are raised exceptions */
+  val toSucceeded: Seq[Assertion] => Assertion =
+    _ => succeed
 }

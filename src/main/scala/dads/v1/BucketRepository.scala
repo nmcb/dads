@@ -9,14 +9,14 @@ import java.util._
 
 import scala.concurrent._
 
-import com.datastax.oss.driver.api.core.cql._
-import com.datastax.oss.driver.api.querybuilder._
-
 import akka._
 import akka.actor.typed._
 import akka.stream.scaladsl._
 import akka.stream.alpakka.cassandra._
 import akka.stream.alpakka.cassandra.scaladsl._
+
+import com.datastax.oss.driver.api.core.cql._
+import com.datastax.oss.driver.api.querybuilder._
 
 trait BucketRepository {
 
@@ -31,12 +31,19 @@ trait BucketRepository {
 
 object BucketRepository {
 
-  case class Measurement( sourceId : UUID
-                        , instant  : Instant
-                        , value    : Long)
   import temporal._
+
   import QueryBuilder._
   import BucketFor._
+  import ChronoUnit._
+  import TemporalAdjusters._
+
+  val TimeZoneOffset: java.time.ZoneOffset = java.time.ZoneOffset.UTC
+
+  case class Measurement( sourceId : UUID
+                        , instant  : Instant
+                        , value    : Long
+                        )
 
   val ValueColumn   = "value"
   val SourceColumn  = "source"
@@ -98,15 +105,17 @@ object BucketRepository {
              , tableName : String
              )
 
+  type BucketOn = Instant => BucketFor
+
   object BucketFor {
 
-    val DayBucketTable      = "day"
-    val MonthBucketTable    = "month"
-    val YearBucketTable     = "year"
-    val WeekYearBucketTable = "week_year"
-    val ForeverBucketTable  = "forever"
+    val DayHourBucketTable   = "day"
+    val MonthDayBucketTable  = "month"
+    val YearMonthBucketTable = "year"
+    val YearWeekBucketTable  = "year_week"
+    val ForeverBucketTable   = "forever"
 
-    private def apply(rowTimeUnit: ChronoUnit)(colTimeUnit: ChronoUnit)(table: String): Instant => BucketFor =
+    private def apply(rowTimeUnit: ChronoUnit, colTimeUnit: ChronoUnit, table: String): BucketOn =
       instant => new BucketFor(
           instant = instant
         , rowTime = truncatedTo(rowTimeUnit)(instant)
@@ -114,33 +123,44 @@ object BucketRepository {
         , tableName = table
       )
 
-    def Day: Instant => BucketFor =
-      BucketFor(ChronoUnit.DAYS)(ChronoUnit.HOURS)(DayBucketTable)
+    def Day: BucketOn =
+      BucketFor(DAYS, HOURS, DayHourBucketTable)
 
-    def Month: Instant => BucketFor =
-      BucketFor(ChronoUnit.MONTHS)(ChronoUnit.DAYS)(MonthBucketTable)
+    def Month: BucketOn =
+      BucketFor(MONTHS, DAYS, MonthDayBucketTable)
 
-    def Year: Instant => BucketFor =
-      BucketFor(ChronoUnit.YEARS)(ChronoUnit.MONTHS)(YearBucketTable)
+    def Year: BucketOn =
+      BucketFor(YEARS, MONTHS, YearMonthBucketTable)
 
-    def WeekYear: Instant => BucketFor =
-      BucketFor(ChronoUnit.YEARS)(ChronoUnit.WEEKS)(WeekYearBucketTable)
+    def WeekYear: BucketOn =
+      BucketFor(YEARS, WEEKS, YearWeekBucketTable)
 
-    def Forever: Instant => BucketFor =
+    def Forever: BucketOn =
       instant =>
         new BucketFor(
             instant   = instant
           , rowTime   = Instant.EPOCH
-          , colTime   = truncatedTo(ChronoUnit.YEARS)(instant)
+          , colTime   = truncatedTo(YEARS)(instant)
           , tableName = ForeverBucketTable
         )
 
-    private final val UTC: ZoneOffset =
-      ZoneOffset.UTC
+    def truncatedTo(chronoUnit: ChronoUnit)(instant: Instant): Instant = {
 
-    private final val truncatedTo: ChronoUnit => Instant => Instant =
-      chronoUnit => instant =>
-        LocalDateTime.ofInstant(instant, UTC).truncatedTo(chronoUnit).toInstant(UTC)
+      def shadow(chronoUnit: ChronoUnit)(localDateTime: LocalDateTime): LocalDateTime =
+        chronoUnit match {
+          case YEARS  =>
+            localDateTime.truncatedTo(DAYS).`with`(firstDayOfYear())
+          case MONTHS =>
+            localDateTime.truncatedTo(DAYS).`with`(firstDayOfMonth())
+          case WEEKS  =>
+            val today = localDateTime.truncatedTo(DAYS)
+            today.minusDays(today.getDayOfWeek().getValue() - DayOfWeek.MONDAY.getValue())
+          case _  =>
+            localDateTime.truncatedTo(chronoUnit)
+        }
+
+      shadow(chronoUnit)(LocalDateTime.ofInstant(instant, TimeZoneOffset)).toInstant(TimeZoneOffset)
+    }
   }
 
   // Utils

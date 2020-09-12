@@ -8,11 +8,12 @@ import com.typesafe.config._
 
 class DadsSettings private (config: Config) {
 
-  val realtimeKeyspace: String =
+  lazy val realtimeKeyspace: String =
     config.getConfig("cassandra").getString("realtime-keyspace")
 
-  val bucketKeyspace: String =
+  lazy val bucketKeyspace: String =
     config.getConfig("cassandra").getString("bucket-keyspace")
+
 }
 
 object DadsSettings {

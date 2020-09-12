@@ -12,12 +12,19 @@ lazy val dads =
     .configs(IntegrationTest)
     .enablePlugins(AkkaGrpcPlugin, JavaAppPackaging)
     .settings( name                := "dads"
-             , libraryDependencies ++= platformDeps ++ monitoringDeps ++ testDeps ++ bumpAkkaRuntimeDeps  ++ bumpGrpcDeps
-             , dependencyOverrides ++= bumpAkkaRuntimeDeps ++ bumpGrpcDeps
+
+             , libraryDependencies ++= Seq( platformDeps
+                                          , monitoringDeps
+                                          , testDeps
+                                          , bumpedAkkaRuntimeDeps
+                                          , bumpedGrpcDeps
+                                          ).flatten
+
+             , dependencyOverrides ++= bumpedAkkaRuntimeDeps ++ bumpedGrpcDeps
              , scalacOptions       ++= hygienicScalacOps
              , Defaults.itSettings
              , onPublishMaskDocumentation
-             , addCompilerPlugin(KindProjectorPlugin)
+             , addCompilerPlugin(KindProjector)
              )
 
 dockerRepository              := Some("dads")
