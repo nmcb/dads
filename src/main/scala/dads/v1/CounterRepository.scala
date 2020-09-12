@@ -31,10 +31,7 @@ object CounterRepository {
 
   final val FirstDayOfWeek: java.time.DayOfWeek  = DayOfWeek.MONDAY
 
-  case class Measurement(  sourceId     : UUID
-                         , instant    : Instant
-                         , adjustment : Long
-                        )
+  case class Measurement(sourceId: UUID, instant: Instant, adjustment: Long)
 
   final val CounterColumn = "value"
   final val SourceColumn  = "source"
@@ -66,7 +63,7 @@ object CounterRepository {
           .whereColumn(RowTimeColumn).isEqualTo(literal(counter.rowTime.toEpochMilli))
           .whereColumn(ColTimeColumn).isEqualTo(literal(counter.colTime.toEpochMilli))
           .build()
-          .updateAsync
+          .updateAsync()
       }
 
       def getFrom(counterOn: CounterOn)(sourceId: UUID)(instant: Instant): Future[Long] = {
@@ -81,7 +78,7 @@ object CounterRepository {
           .whereColumn(RowTimeColumn).isEqualTo(literal(counter.rowTime.toEpochMilli))
           .whereColumn(ColTimeColumn).isEqualTo(literal(counter.colTime.toEpochMilli))
           .build()
-          .selectOptionAsync
+          .selectOptionAsync()
           .map(toCounter)
       }
 
@@ -94,19 +91,9 @@ object CounterRepository {
 
   // MODEL
 
-  trait CounterInstance {
-    def rowTime   : Instant
-    def colTime   : Instant
-    def tableName : String
-  }
+  type CounterOn = Instant => CounterId
 
-  type CounterOn = Instant => CounterInstance
-
-  private case class
-    CounterFor( rowTime   : Instant
-              , colTime   : Instant
-              , tableName : String
-              ) extends CounterInstance
+  case class CounterId(rowTime: Instant, colTime: Instant, tableName : String)
 
   object CounterOn {
 
@@ -118,10 +105,10 @@ object CounterRepository {
 
     private def apply(rowTimeUnit: ChronoUnit, colTimeUnit: ChronoUnit, table: String): CounterOn =
       instant =>
-        CounterFor( rowTime   = truncatedTo(rowTimeUnit)(instant)
-                  , colTime   = truncatedTo(colTimeUnit)(instant)
-                  , tableName = table
-                  )
+        CounterId( rowTime   = truncatedTo(rowTimeUnit)(instant)
+                 , colTime   = truncatedTo(colTimeUnit)(instant)
+                 , tableName = table
+                 )
 
     val Days: CounterOn =
       CounterOn(DAYS, HOURS, DayCounterTable)
@@ -137,10 +124,10 @@ object CounterRepository {
 
     val SinceEpoch: CounterOn =
       instant =>
-        CounterFor( rowTime   = Instant.EPOCH
-                  , colTime   = truncatedTo(YEARS)(instant)
-                  , tableName = AlwaysCounterTable
-                  )
+        CounterId( rowTime   = Instant.EPOCH
+                 , colTime   = truncatedTo(YEARS)(instant)
+                 , tableName = AlwaysCounterTable
+                 )
 
     val All: Seq[CounterOn] =
       Seq(Days, Months, MonthYears, WeekYears, SinceEpoch)
@@ -172,13 +159,13 @@ object CounterRepository {
 
   implicit class StatementUtil(statement: Statement[_])(implicit session: CassandraSession, system: ActorSystem[_]) {
 
-    def selectOptionAsync: Future[Option[Row]] =
+    def selectOptionAsync(): Future[Option[Row]] =
       session.select(statement).runWith(Sink.headOption)
 
-    def selectAsync: Future[Seq[Row]] =
+    def selectAsync(): Future[Seq[Row]] =
       session.select(statement).runWith(Sink.seq)
 
-    def updateAsync: Future[Done] =
+    def updateAsync(): Future[Done] =
       session.executeWrite(statement)
   }
 }
