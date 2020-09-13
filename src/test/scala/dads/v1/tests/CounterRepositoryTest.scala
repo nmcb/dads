@@ -24,7 +24,7 @@ class CounterRepositoryTest
   extends AsyncFlatSpec
     with Matchers
     with TimeLimits
-    with BeforeAndAfter
+    with BeforeAndAfterAll
     with Eventually {
 
   import CounterRepository._
@@ -52,22 +52,24 @@ class CounterRepositoryTest
         , Measurement(UUID.randomUUID, now, 670L)
         )
 
-  def withFixture[A](f: Measurement => Future[A]): Future[Seq[A]] =
+  def withMeasurements[A](f: Measurement => Future[A]): Future[Seq[A]] =
     Future.sequence(fixture.map(f))
-
-  behavior of "CounterRepository"
 
   val repository: CounterRepository =
     CounterRepository(settings)(system.toTyped)
 
-  after {
+  behavior of "CounterRepository"
+
+  override def afterAll(): Unit = {
+    super.afterAll()
     system.terminate()
   }
+
 
   it should "round-trip getFrom/addTo/getFrom measurements for all counters" in {
 
     def tripRoundWith[A](counterOn: CounterOn): Instant => Future[Seq[Assertion]] = { instant =>
-      withFixture { measurement =>
+      withMeasurements { measurement =>
         for {
           before  <- repository.getFrom(counterOn)(measurement.sourceId)(instant)
           _       <- repository.addTo(counterOn)(measurement)
@@ -88,9 +90,39 @@ class CounterRepositoryTest
     }
   }
 
+  it should "round-trip getFrom/addToAll/getFrom measurements for all counters" in {
+
+    case class Key(counterId: CounterId, measurement: Measurement)
+
+    def loadAll(instant: Instant, measurements: Seq[Measurement]): Future[Map[Key,Long]] =
+      Future.sequence(
+        CounterOn.All
+          .flatMap(counterOn => measurements.map(measurement => counterOn -> measurement)).toMap
+          .map({ case (counterOn,measurement) =>
+            repository
+              .getFrom(counterOn)(measurement.sourceId)(measurement.instant)
+              .map(counter => Key(counterOn(measurement.instant),measurement) -> counter)
+          }).toSeq
+      ).map(_.toMap)
+
+    eventually {
+      for {
+        before <- loadAll(now, fixture)
+        added  <- Future.sequence(fixture.map(m => repository.addToAll(m)))
+        after  <- loadAll(now, fixture)
+      } yield {
+        assert(added.size === CounterOn.All.size)
+        assert(before.keys.map(key => after(key) === before(key) + key.measurement.adjustment).forall(isTrue))
+      }
+    }
+  }
+
   // UTILS
 
   /* failed tests raise exceptions */
-  val toSucceeded: Seq[Seq[Assertion]] => Assertion =
+  def toSucceeded: Seq[Seq[Assertion]] => Assertion =
     _ => succeed
+
+  def isTrue: Boolean => Boolean =
+    _ === true
 }
