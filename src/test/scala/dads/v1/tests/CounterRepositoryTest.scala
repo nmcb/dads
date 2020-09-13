@@ -44,15 +44,15 @@ class CounterRepositoryTest
   val now: Instant =
     Instant.now
 
-  val fixture: Seq[Measurement] =
-    List( Measurement(UUID.randomUUID, now, 666L)
-        , Measurement(UUID.randomUUID, now, 667L)
-        , Measurement(UUID.randomUUID, now, 668L)
-        , Measurement(UUID.randomUUID, now, 669L)
-        , Measurement(UUID.randomUUID, now, 670L)
+  val fixture: Seq[Adjustment] =
+    List( Adjustment(UUID.randomUUID, now, 666L)
+        , Adjustment(UUID.randomUUID, now, 667L)
+        , Adjustment(UUID.randomUUID, now, 668L)
+        , Adjustment(UUID.randomUUID, now, 669L)
+        , Adjustment(UUID.randomUUID, now, 670L)
         )
 
-  def withMeasurements[A](f: Measurement => Future[A]): Future[Seq[A]] =
+  def withadjustments[A](f: Adjustment => Future[A]): Future[Seq[A]] =
     Future.sequence(fixture.map(f))
 
   val repository: CounterRepository =
@@ -66,15 +66,15 @@ class CounterRepositoryTest
   }
 
 
-  it should "round-trip getFrom/addTo/getFrom measurements for all counters" in {
+  it should "round-trip getFrom/addTo/getFrom adjustments for all counters" in {
 
     def tripRoundWith[A](counterOn: CounterOn): Instant => Future[Seq[Assertion]] = { instant =>
-      withMeasurements { measurement =>
+      withadjustments { adjustment =>
         for {
-          before  <- repository.getFrom(counterOn)(measurement.sourceId)(instant)
-          _       <- repository.addTo(counterOn)(measurement)
-          after   <- repository.getFrom(counterOn)(measurement.sourceId)(instant)
-        } yield assert(after === before + measurement.adjustment)
+          before  <- repository.getFrom(counterOn)(adjustment.sourceId)(instant)
+          _       <- repository.addTo(counterOn)(adjustment)
+          after   <- repository.getFrom(counterOn)(adjustment.sourceId)(instant)
+        } yield assert(after === before + adjustment.value)
       }
     }
 
@@ -90,18 +90,18 @@ class CounterRepositoryTest
     }
   }
 
-  it should "round-trip getFrom/addToAll/getFrom measurements for all counters" in {
+  it should "round-trip getFrom/addToAll/getFrom adjustments for all counters" in {
 
-    case class Key(counterId: CounterId, measurement: Measurement)
+    case class Key(counterId: CounterId, adjustment: Adjustment)
 
-    def loadAll(instant: Instant, measurements: Seq[Measurement]): Future[Map[Key,Long]] =
+    def loadAll(instant: Instant, adjustments: Seq[Adjustment]): Future[Map[Key,Long]] =
       Future.sequence(
         CounterOn.All
-          .flatMap(counterOn => measurements.map(measurement => counterOn -> measurement)).toMap
-          .map({ case (counterOn,measurement) =>
+          .flatMap(counterOn => adjustments.map(adjustment => counterOn -> adjustment)).toMap
+          .map({ case (counterOn,adjustment) =>
             repository
-              .getFrom(counterOn)(measurement.sourceId)(measurement.instant)
-              .map(counter => Key(counterOn(measurement.instant),measurement) -> counter)
+              .getFrom(counterOn)(adjustment.sourceId)(adjustment.instant)
+              .map(counter => Key(counterOn(adjustment.instant),adjustment) -> counter)
           }).toSeq
       ).map(_.toMap)
 
@@ -112,7 +112,7 @@ class CounterRepositoryTest
         after  <- loadAll(now, fixture)
       } yield {
         assert(added.size === CounterOn.All.size)
-        assert(before.keys.map(key => after(key) === before(key) + key.measurement.adjustment).forall(isTrue))
+        assert(before.keys.map(key => after(key) === before(key) + key.adjustment.value).forall(isTrue))
       }
     }
   }

@@ -31,7 +31,7 @@ object CounterRepository {
 
   final val FirstDayOfWeek: java.time.DayOfWeek  = DayOfWeek.MONDAY
 
-  case class Measurement(sourceId: UUID, instant: Instant, adjustment: Long)
+  case class Adjustment(sourceId: UUID, instant: Instant, value: Long)
 
   final val CounterColumn = "value"
   final val SourceColumn  = "source"
@@ -51,15 +51,15 @@ object CounterRepository {
           .get(system)
           .sessionFor(CassandraSessionSettings())
 
-      def addToAll(measurement: Measurement): Future[Done] =
-        Future.sequence(All.map(counterOn => addTo(counterOn)(measurement))).map(toDone)
+      def addToAll(adjustment: Adjustment): Future[Done] =
+        Future.sequence(All.map(counterOn => addTo(counterOn)(adjustment))).map(toDone)
 
-      def addTo(counterOn: CounterOn)(measurement: Measurement): Future[Done] = {
-        val counter = counterOn(measurement.instant)
+      def addTo(counterOn: CounterOn)(adjustment: Adjustment): Future[Done] = {
+        val counter = counterOn(adjustment.instant)
 
         update(settings.counterKeyspace, counter.tableName)
-          .increment(CounterColumn, literal(measurement.adjustment))
-          .whereColumn(SourceColumn).isEqualTo(literal(measurement.sourceId))
+          .increment(CounterColumn, literal(adjustment.value))
+          .whereColumn(SourceColumn).isEqualTo(literal(adjustment.sourceId))
           .whereColumn(RowTimeColumn).isEqualTo(literal(counter.rowTime.toEpochMilli))
           .whereColumn(ColTimeColumn).isEqualTo(literal(counter.colTime.toEpochMilli))
           .build()
@@ -93,7 +93,25 @@ object CounterRepository {
 
   type CounterOn = Instant => CounterId
 
-  case class CounterId(rowTime: Instant, colTime: Instant, tableName : String)
+  case class CounterId( rowTime     : Instant
+                      , colTime     : Instant
+                      , tableName   : String
+                      , rowTimeUnit : Option[ChronoUnit]
+                      , colTimeUnit : ChronoUnit
+                      ) {
+
+    def nextCounterByRow: CounterId =
+      copy(rowTime = rowTimeUnit.map(unit => rowTime.plus(1, unit)).getOrElse(rowTime))
+
+    def prefCounterByRow: CounterId =
+      copy(rowTime = rowTimeUnit.map(unit => rowTime.minus(1, unit)).getOrElse(rowTime))
+
+    def nextCounterByCol: CounterId =
+      copy(colTime = colTime.plus(1, colTimeUnit))
+
+    def prefCounterByCol: CounterId =
+      copy(colTime = colTime.minus(1, colTimeUnit))
+  }
 
   object CounterOn {
 
@@ -108,6 +126,8 @@ object CounterRepository {
         CounterId( rowTime   = truncatedTo(rowTimeUnit)(instant)
                  , colTime   = truncatedTo(colTimeUnit)(instant)
                  , tableName = table
+                 , rowTimeUnit = Some(rowTimeUnit)
+                 , colTimeUnit = colTimeUnit
                  )
 
     val Days: CounterOn =
@@ -124,38 +144,32 @@ object CounterRepository {
 
     val SinceEpoch: CounterOn =
       instant =>
-        CounterId( rowTime   = Instant.EPOCH
-                 , colTime   = truncatedTo(YEARS)(instant)
-                 , tableName = AlwaysCounterTable
+        CounterId( rowTime     = Instant.EPOCH
+                 , colTime     = truncatedTo(YEARS)(instant)
+                 , tableName   = AlwaysCounterTable
+                 , rowTimeUnit = None
+                 , colTimeUnit = YEARS
                  )
 
     val All: Seq[CounterOn] =
       Seq(Days, Months, MonthYears, WeekYears, SinceEpoch)
 
-    // LOGIC
+    def truncatedTo(chronoUnit: ChronoUnit)(instant: Instant): Instant =
+      truncatedTo(chronoUnit, LocalDateTime.ofInstant(instant, TimeZoneOffset)).toInstant(TimeZoneOffset)
 
-    def truncatedTo(chronoUnit: ChronoUnit)(instant: Instant): Instant = {
-
-      def delegate(chronoUnit: ChronoUnit, localDateTime: LocalDateTime): LocalDateTime =
-        chronoUnit match {
-          case YEARS  =>
-            localDateTime.truncatedTo(DAYS).`with`(firstDayOfYear)
-          case MONTHS =>
-            localDateTime.truncatedTo(DAYS).`with`(firstDayOfMonth)
-          case WEEKS  =>
-            val localDate = localDateTime.truncatedTo(DAYS)
-            localDate.minusDays(localDate.getDayOfWeek.getValue - FirstDayOfWeek.getValue)
-          case _  =>
-            localDateTime.truncatedTo(chronoUnit)
-        }
-
-      val shadow   = LocalDateTime.ofInstant(instant, TimeZoneOffset)
-      val shadowed = delegate(chronoUnit, shadow)
-      shadowed.toInstant(TimeZoneOffset)
-    }
+    private def truncatedTo(chronoUnit: ChronoUnit, localDateTime: LocalDateTime): LocalDateTime =
+      chronoUnit match {
+        case YEARS  =>
+          localDateTime.truncatedTo(DAYS).`with`(firstDayOfYear)
+        case MONTHS =>
+          localDateTime.truncatedTo(DAYS).`with`(firstDayOfMonth)
+        case WEEKS  =>
+          val localDate = localDateTime.truncatedTo(DAYS)
+          localDate.minusDays(localDate.getDayOfWeek.getValue - FirstDayOfWeek.getValue)
+        case _  =>
+          localDateTime.truncatedTo(chronoUnit)
+      }
   }
-
-  // UTILS
 
   implicit class StatementUtil(statement: Statement[_])(implicit session: CassandraSession, system: ActorSystem[_]) {
 
@@ -174,9 +188,9 @@ import CounterRepository._
 
 trait CounterRepository {
 
-  def addTo(counterOn: CounterOn)(measurement: Measurement): Future[Done]
+  def addTo(counterOn: CounterOn)(adjustment: Adjustment): Future[Done]
 
-  def addToAll(measurement: Measurement): Future[Done]
+  def addToAll(adjustment: Adjustment): Future[Done]
 
   def getFrom(counter: CounterOn)(sourceId: UUID)(instant: Instant): Future[Long]
 }

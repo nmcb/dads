@@ -1,6 +1,6 @@
 ## DADS
 
-Provides measurement and counter storage.
+Provides adjustment and counter storage.
 
 ### Publish and Deploy in Development
 
