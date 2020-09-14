@@ -5,7 +5,6 @@
 package dads.v1
 
 import java.time._
-import java.util._
 
 import scala.concurrent._
 
@@ -64,7 +63,7 @@ object CounterRepository {
           .updateAsync()
       }
 
-      def getFrom(counterOn: CounterOn)(sourceId: UUID)(instant: Instant): Future[Long] = {
+      def getFrom(counterOn: CounterOn)(sourceId: SourceId)(instant: Instant): Future[Long] = {
         val counter = counterOn(instant)
 
         selectFrom(settings.counterKeyspace, counter.tableName)
@@ -169,7 +168,7 @@ object CounterRepository {
 
 import CounterRepository._
 
-case class Adjustment(sourceId: UUID, instant: Instant, value: Long)
+case class Adjustment(sourceId: SourceId, instant: Instant, value: Long)
 
 trait CounterRepository {
 
@@ -177,7 +176,7 @@ trait CounterRepository {
 
   def addToAll(adjustment: Adjustment): Future[Done]
 
-  def getFrom(counter: CounterOn)(sourceId: UUID)(instant: Instant): Future[Long]
+  def getFrom(counter: CounterOn)(sourceId: SourceId)(instant: Instant): Future[Long]
 }
 
 

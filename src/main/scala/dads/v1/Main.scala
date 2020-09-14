@@ -14,14 +14,14 @@ object Main {
 
   def main(args: Array[String]): Unit = {
 
-    val config = ConfigFactory.defaultApplication()
-    val system = ActorSystem[Nothing](Behaviors.empty, "MainSystem", config)
+    implicit val system: ActorSystem[Nothing] =
+      ActorSystem[Nothing](Behaviors.empty, "MainSystem", ConfigFactory.defaultApplication())
 
-    new Main(system).run()
+    new Main().run()
   }
 }
 
-class Main(system: ActorSystem[_]) {
+class Main(implicit system: ActorSystem[_]) {
 
   import akka.actor.CoordinatedShutdown
   import org.slf4j._
@@ -33,6 +33,9 @@ class Main(system: ActorSystem[_]) {
         .info("DADS Stopped")
     }
 
-  def run(): Unit =
+  def run(): Unit = {
     system.log.info("DADS Starting...")
+    system.log.info("DADS MeasurementReceiver...")
+    new MeasurementReceiver().run()
+  }
 }
