@@ -4,6 +4,7 @@
 
 package dads.v1.transport
 
-trait Decoder[M, A] {
+trait Decoder[M <: scalapb.GeneratedMessage, A] {
+  // FIXME Add validation in result
   def decode(msg: M): A
 }

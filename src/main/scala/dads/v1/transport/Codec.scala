@@ -13,7 +13,7 @@ import transport.grpc.v1._
 
 object Codec {
 
-  implicit class DecoderOps[M](msg: M) {
+  implicit class DecoderOps[M <: scalapb.GeneratedMessage](msg: M) {
 
     def as[A: Decoder[M, *]]: A =
       implicitly[Decoder[M, A]].decode(msg)
@@ -25,7 +25,6 @@ object Codec {
   implicit val measurementDataDecoder: Decoder[MeasurementData, Seq[Measurement]] =
     data =>
       data.data.map(v =>
-          // FIXME Add validation
           Measurement( UUID.fromString(data.sourceId)
                      , Instant.ofEpochMilli(v.timestamp)
                      , v.value.get.getDecimal.toLong
