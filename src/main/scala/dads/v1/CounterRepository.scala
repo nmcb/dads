@@ -31,8 +31,6 @@ object CounterRepository {
 
   final val FirstDayOfWeek: java.time.DayOfWeek  = DayOfWeek.MONDAY
 
-  case class Adjustment(sourceId: UUID, instant: Instant, value: Long)
-
   final val CounterColumn = "value"
   final val SourceColumn  = "source"
   final val RowTimeColumn = "rowtime"
@@ -185,6 +183,8 @@ object CounterRepository {
 }
 
 import CounterRepository._
+
+case class Adjustment(sourceId: UUID, instant: Instant, value: Long)
 
 trait CounterRepository {
 

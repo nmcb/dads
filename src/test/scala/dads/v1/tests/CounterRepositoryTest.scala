@@ -52,7 +52,7 @@ class CounterRepositoryTest
         , Adjustment(UUID.randomUUID, now, 670L)
         )
 
-  def withadjustments[A](f: Adjustment => Future[A]): Future[Seq[A]] =
+  def withAdjustments[A](f: Adjustment => Future[A]): Future[Seq[A]] =
     Future.sequence(fixture.map(f))
 
   val repository: CounterRepository =
@@ -66,17 +66,17 @@ class CounterRepositoryTest
   }
 
 
-  it should "round-trip getFrom/addTo/getFrom adjustments for all counters" in {
+  it should "round-trip getFrom/addTo/getFrom should be able to update all counters" in {
 
-    def tripRoundWith[A](counterOn: CounterOn): Instant => Future[Seq[Assertion]] = { instant =>
-      withadjustments { adjustment =>
-        for {
-          before  <- repository.getFrom(counterOn)(adjustment.sourceId)(instant)
-          _       <- repository.addTo(counterOn)(adjustment)
-          after   <- repository.getFrom(counterOn)(adjustment.sourceId)(instant)
-        } yield assert(after === before + adjustment.value)
-      }
-    }
+    def tripRoundWith[A](counterOn: CounterOn): Instant => Future[Seq[Assertion]] =
+      instant =>
+        withAdjustments { adjustment =>
+          for {
+            before  <- repository.getFrom(counterOn)(adjustment.sourceId)(instant)
+            _       <- repository.addTo(counterOn)(adjustment)
+            after   <- repository.getFrom(counterOn)(adjustment.sourceId)(instant)
+          } yield assert(after === before + adjustment.value)
+        }
 
     eventually {
       Future.sequence(
@@ -108,7 +108,7 @@ class CounterRepositoryTest
     eventually {
       for {
         before <- loadAll(now, fixture)
-        added  <- Future.sequence(fixture.map(m => repository.addToAll(m)))
+        added  <- Future.sequence(fixture.map(adjustment => repository.addToAll(adjustment)))
         after  <- loadAll(now, fixture)
       } yield {
         assert(added.size === CounterOn.All.size)
