@@ -85,9 +85,7 @@ object CounterRepository {
 
       private def toCounter(rs: Option[Row]): Long =
         rs.map(_.getLong(CounterColumn)).getOrElse(0)
-  }
-
-  // MODEL
+    }
 
   type CounterOn = Instant => CounterId
 
@@ -96,20 +94,7 @@ object CounterRepository {
                       , tableName   : String
                       , rowTimeUnit : Option[ChronoUnit]
                       , colTimeUnit : ChronoUnit
-                      ) {
-
-    def nextCounterByRow: CounterId =
-      copy(rowTime = rowTimeUnit.map(unit => rowTime.plus(1, unit)).getOrElse(rowTime))
-
-    def prefCounterByRow: CounterId =
-      copy(rowTime = rowTimeUnit.map(unit => rowTime.minus(1, unit)).getOrElse(rowTime))
-
-    def nextCounterByCol: CounterId =
-      copy(colTime = colTime.plus(1, colTimeUnit))
-
-    def prefCounterByCol: CounterId =
-      copy(colTime = colTime.minus(1, colTimeUnit))
-  }
+                      )
 
   object CounterOn {
 
