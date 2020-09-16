@@ -27,6 +27,14 @@ lazy val dads =
              , addCompilerPlugin(KindProjector)
              )
 
+// FIXME Pending https://github.com/sbt/sbt/issues/5008
+evictionWarningOptions in update :=
+  EvictionWarningOptions
+    .default
+    .withWarnTransitiveEvictions(false)
+    .withWarnDirectEvictions(false)
+    .withWarnScalaVersionEviction(false)
+
 dockerRepository              := Some("dads")
 dockerBaseImage               := "java"
 version            in Docker  := "latest"

@@ -10,7 +10,9 @@ import java.time.temporal.ChronoUnit
 
 import org.scalacheck._
 
-object CounterIdCheck extends Properties("CounterId") with data.CounterRepositoryData {
+object CounterIdCheck
+  extends Properties("CounterId")
+    with data.CounterRepositoryData {
 
   import Prop._
   import CounterIdData._
