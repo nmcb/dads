@@ -18,7 +18,7 @@ object CounterIdCheck
   import CounterIdData._
   import CounterRepository._
 
-  def postfix(chronoUnit: ChronoUnit): String =
+  def truncation(chronoUnit: ChronoUnit): String =
     chronoUnit match {
       case ChronoUnit.HOURS   =>               "00:00Z"
       case ChronoUnit.DAYS    =>           "T00:00:00Z"
@@ -32,7 +32,7 @@ object CounterIdCheck
   property("CounterId should respect truncation in representation") =
     forAll { (instant: Instant, counterOn: CounterOn) =>
       val counterId = counterOn(instant)
-      (   counterId.minorInstant.toString.endsWith(postfix(counterId.minorChronoUnit))
-      &&  counterId.majorInstant.toString.endsWith(postfix(counterId.majorChronoUnit)))
+      (   counterId.minorInstant.toString.endsWith(truncation(counterId.minorChronoUnit))
+      &&  counterId.majorInstant.toString.endsWith(truncation(counterId.majorChronoUnit)))
     }
 }

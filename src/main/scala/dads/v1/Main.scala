@@ -27,15 +27,16 @@ class Main(implicit system: ActorSystem[_]) {
   import org.slf4j._
 
   CoordinatedShutdown(system)
-    .addJvmShutdownHook {
+    .addJvmShutdownHook(
       LoggerFactory
         .getLogger(Main.getClass)
-        .info("DADS Stopped")
-    }
+        .info("DADS Stopped"))
+
+  lazy val settings: DadsSettings =
+    DadsSettings()
 
   def run(): Unit = {
     system.log.info("DADS Starting...")
-    system.log.info("DADS MeasurementReceiver...")
-    new MeasurementReceiver().run()
+    new MeasurementReceiver(settings.measurementReceiver).run()
   }
 }
