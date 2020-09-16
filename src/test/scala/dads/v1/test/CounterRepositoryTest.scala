@@ -3,7 +3,7 @@
  */
 
 package dads.v1
-package tests
+package test
 
 import java.time._
 import java.util.UUID

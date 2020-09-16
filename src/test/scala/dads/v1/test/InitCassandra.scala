@@ -3,7 +3,7 @@
  */
 
 package dads.v1
-package tests
+package test
 
 import akka._
 import akka.actor.typed._

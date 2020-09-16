@@ -23,6 +23,7 @@ object MeasurementReceiver {
     extends MeasurementService {
 
     import Codec._
+    import CounterRepository._
 
     implicit val executionContext: ExecutionContext =
       system.executionContext

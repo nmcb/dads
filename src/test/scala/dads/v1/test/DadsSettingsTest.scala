@@ -3,7 +3,7 @@
  */
 
 package dads.v1
-package tests
+package test
 
 import org.scalatest.flatspec._
 import org.scalatest.matchers.should._

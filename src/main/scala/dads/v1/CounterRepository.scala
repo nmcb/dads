@@ -7,11 +7,13 @@ package dads.v1
 import java.time._
 
 import scala.concurrent._
+
 import akka._
 import akka.actor.typed._
 import akka.stream.scaladsl._
 import akka.stream.alpakka.cassandra._
 import akka.stream.alpakka.cassandra.scaladsl._
+
 import com.datastax.oss.driver.api.core.cql._
 import com.datastax.oss.driver.api.querybuilder._
 
@@ -25,7 +27,6 @@ object CounterRepository {
   import TemporalAdjusters._
 
   final val RepositoryTimeZoneOffset: java.time.ZoneOffset = java.time.ZoneOffset.UTC
-
   final val RepositoryFirstDayOfWeek: java.time.DayOfWeek  = java.time.DayOfWeek.MONDAY
 
   final val CounterValueColumn   = "value"
@@ -84,18 +85,17 @@ object CounterRepository {
         rs.map(_.getLong(CounterValueColumn)).getOrElse(0)
     }
 
-  case class CounterId( majorInstant  : Instant
-                      , minorInstant  : Instant
-                      , tableName     : String
-                      , majorTimeUnit : ChronoUnit
-                      , minorTimeUnit : ChronoUnit
+  case class Adjustment( sourceId : SourceId
+                       , instant  : Instant
+                       , value    : Long
+                       )
+
+  case class CounterId( majorInstant    : Instant
+                      , minorInstant    : Instant
+                      , tableName       : String
+                      , majorChronoUnit : ChronoUnit
+                      , minorChronoUnit : ChronoUnit
                       ) {
-
-    private lazy val nextMajorInstant: Instant =
-      majorInstant.plus(1, majorTimeUnit)
-
-    private lazy val nextMinorInstant: Instant =
-      minorInstant.plus(1, minorTimeUnit)
 
     def nextMajor: CounterId =
       copy(majorInstant = nextMajorInstant, minorInstant = nextMajorInstant)
@@ -106,12 +106,6 @@ object CounterRepository {
       else
         copy(majorInstant = nextMajorInstant, minorInstant = nextMinorInstant)
 
-    private lazy val prevMajorInstant: Instant =
-      majorInstant.minus(1, majorTimeUnit)
-
-    private lazy val prevMinorInstant: Instant =
-      minorInstant.minus(1, minorTimeUnit)
-
     def prevMajor: CounterId =
       copy(majorInstant = prevMajorInstant, minorInstant = prevMajorInstant)
 
@@ -120,29 +114,37 @@ object CounterRepository {
         copy(majorInstant = prevMajorInstant, minorInstant = prevMinorInstant)
       else
         copy(minorInstant = prevMinorInstant)
+
+    private lazy val nextMajorInstant: Instant =
+      majorInstant.plusMillis(majorChronoUnit.getDuration.toMillis)
+
+    private lazy val nextMinorInstant: Instant =
+      minorInstant.plusMillis(majorChronoUnit.getDuration.toMillis)
+
+    private lazy val prevMajorInstant: Instant =
+      majorInstant.minusMillis(majorChronoUnit.getDuration.toMillis)
+
+    private lazy val prevMinorInstant: Instant =
+      minorInstant.minusMillis(minorChronoUnit.getDuration.toMillis)
   }
 
   object CounterId {
 
     val withRepositoryOffsetTruncatedTo: TemporalAdjuster => Instant => Instant =
-      adjuster => instant => instant.atZone(RepositoryTimeZoneOffset).`with`(adjuster).toInstant
+      adjuster => instant =>
+        instant.atZone(RepositoryTimeZoneOffset).truncatedTo(DAYS).`with`(adjuster).toInstant
 
     val firstDayOfRepositoryWeek: TemporalAdjuster =
-      temporal => RepositoryFirstDayOfWeek.adjustInto(temporal)
+      temporal =>
+        RepositoryFirstDayOfWeek.adjustInto(temporal)
 
-    def truncatedTo(chronoUnit: ChronoUnit)(instant: Instant): Instant = {
-
+    def truncatedTo(chronoUnit: ChronoUnit)(instant: Instant): Instant =
       chronoUnit match {
-        case YEARS  =>
-          withRepositoryOffsetTruncatedTo(firstDayOfYear)(instant)
-        case MONTHS =>
-          withRepositoryOffsetTruncatedTo(firstDayOfMonth)(instant)
-        case WEEKS  =>
-          withRepositoryOffsetTruncatedTo(firstDayOfRepositoryWeek)(instant)
-        case _  =>
-          instant.truncatedTo(chronoUnit)
+        case YEARS  => withRepositoryOffsetTruncatedTo(firstDayOfYear)(instant)
+        case MONTHS => withRepositoryOffsetTruncatedTo(firstDayOfMonth)(instant)
+        case WEEKS  => withRepositoryOffsetTruncatedTo(firstDayOfRepositoryWeek)(instant)
+        case _      => instant.truncatedTo(chronoUnit)
       }
-    }
   }
 
   type CounterOn = Instant => CounterId
@@ -157,13 +159,13 @@ object CounterRepository {
     final val WeeksByYearsCounterTable  = "year_week"
     final val YearsCounterTable         = "forever"
 
-    private def apply(timeUnit: ChronoUnit, byTimeUnit: ChronoUnit, tableName: String): CounterOn =
+    private def apply(chronoUnit: ChronoUnit, byChronoUnit: ChronoUnit, tableName: String): CounterOn =
       instant =>
-        CounterId( majorInstant  = truncatedTo(byTimeUnit)(instant)
-                 , minorInstant  = truncatedTo(timeUnit)(instant)
-                 , tableName     = tableName
-                 , majorTimeUnit = byTimeUnit
-                 , minorTimeUnit = timeUnit
+        CounterId( majorInstant    = truncatedTo(byChronoUnit)(instant)
+                 , minorInstant    = truncatedTo(chronoUnit)(instant)
+                 , tableName       = tableName
+                 , majorChronoUnit = byChronoUnit
+                 , minorChronoUnit = chronoUnit
                  )
 
     val HoursByDays: CounterOn =
@@ -180,11 +182,11 @@ object CounterRepository {
 
     val Years: CounterOn =
       instant =>
-        CounterId( majorInstant  = Instant.EPOCH
-                 , minorInstant  = truncatedTo(YEARS)(instant)
-                 , tableName     = YearsCounterTable
-                 , majorTimeUnit = FOREVER
-                 , minorTimeUnit = YEARS
+        CounterId( majorInstant    = Instant.EPOCH
+                 , minorInstant    = truncatedTo(YEARS)(instant)
+                 , tableName       = YearsCounterTable
+                 , majorChronoUnit = FOREVER
+                 , minorChronoUnit = YEARS
                  )
 
     val All: Seq[CounterOn] =
@@ -205,8 +207,6 @@ object CounterRepository {
 }
 
 import CounterRepository._
-
-case class Adjustment(sourceId: SourceId, instant: Instant, value: Long)
 
 trait CounterRepository {
 
