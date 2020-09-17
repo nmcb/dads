@@ -26,8 +26,8 @@ object CounterRepository {
   import ChronoUnit._
   import TemporalAdjusters._
 
-  final val RepositoryTimeZoneOffset: java.time.ZoneOffset = java.time.ZoneOffset.UTC
-  final val RepositoryFirstDayOfWeek: java.time.DayOfWeek  = java.time.DayOfWeek.MONDAY
+  final val TimeZoneOfRepositoryOffset: java.time.ZoneOffset = java.time.ZoneOffset.UTC
+  final val FirstDayOfRepositoryWeek  : java.time.DayOfWeek  = java.time.DayOfWeek.MONDAY
 
   final val CounterValueColumn   = "value"
   final val SourceIdColumn       = "source"
@@ -97,54 +97,35 @@ object CounterRepository {
                       , minorChronoUnit : ChronoUnit
                       ) {
 
-    def nextMajor: CounterId =
-      copy(majorInstant = nextMajorInstant, minorInstant = nextMajorInstant)
-
-    def nextMinor: CounterId =
-      if (nextMinorInstant.isBefore(nextMajorInstant))
-        copy(minorInstant = nextMinorInstant)
-      else
-        copy(majorInstant = nextMajorInstant, minorInstant = nextMinorInstant)
-
-    def prevMajor: CounterId =
-      copy(majorInstant = prevMajorInstant, minorInstant = prevMajorInstant)
-
-    def prevMinor: CounterId =
-      if (prevMinorInstant.isBefore(majorInstant))
-        copy(majorInstant = prevMajorInstant, minorInstant = prevMinorInstant)
-      else
-        copy(minorInstant = prevMinorInstant)
-
-    private lazy val nextMajorInstant: Instant =
-      majorInstant.plusMillis(majorChronoUnit.getDuration.toMillis)
-
-    private lazy val nextMinorInstant: Instant =
-      minorInstant.plusMillis(majorChronoUnit.getDuration.toMillis)
-
-    private lazy val prevMajorInstant: Instant =
-      majorInstant.minusMillis(majorChronoUnit.getDuration.toMillis)
-
-    private lazy val prevMinorInstant: Instant =
-      minorInstant.minusMillis(minorChronoUnit.getDuration.toMillis)
+    lazy val sampleBefore: Instant =
+      minorInstant
+        .minusMillis(
+          minorChronoUnit
+            .getDuration
+            .dividedBy(CounterId.SampleFactor)
+            .toMillis)
   }
 
   object CounterId {
 
-    val withRepositoryOffsetTruncatedTo: TemporalAdjuster => Instant => Instant =
-      adjuster => instant =>
-        instant.atZone(RepositoryTimeZoneOffset).truncatedTo(DAYS).`with`(adjuster).toInstant
-
-    val firstDayOfRepositoryWeek: TemporalAdjuster =
-      temporal =>
-        RepositoryFirstDayOfWeek.adjustInto(temporal)
+    val SampleFactor = 3
 
     def truncatedTo(chronoUnit: ChronoUnit)(instant: Instant): Instant =
       chronoUnit match {
-        case YEARS  => withRepositoryOffsetTruncatedTo(firstDayOfYear)(instant)
-        case MONTHS => withRepositoryOffsetTruncatedTo(firstDayOfMonth)(instant)
-        case WEEKS  => withRepositoryOffsetTruncatedTo(firstDayOfRepositoryWeek)(instant)
+        case YEARS  => withRepositoryOffsetTruncatedToDays(firstDayOfYear)(instant)
+        case MONTHS => withRepositoryOffsetTruncatedToDays(firstDayOfMonth)(instant)
+        case WEEKS  => withRepositoryOffsetTruncatedToDays(firstDayOfRepositoryWeek)(instant)
         case _      => instant.truncatedTo(chronoUnit)
       }
+
+    private[this] val firstDayOfRepositoryWeek: TemporalAdjuster =
+      temporal => FirstDayOfRepositoryWeek.adjustInto(temporal)
+
+    private[this] def withRepositoryOffsetTruncatedToDays(adjuster: TemporalAdjuster)(instant: Instant): Instant =
+      instant.atZone(TimeZoneOfRepositoryOffset).truncatedTo(DAYS).`with`(adjuster).toInstant
+
+    implicit val counterIdOrdering: Ordering[CounterId] =
+      (x: CounterId, y: CounterId) => x.minorInstant.compareTo(y.minorInstant)
   }
 
   type CounterOn = Instant => CounterId
@@ -153,11 +134,11 @@ object CounterRepository {
 
     import CounterId._
 
-    final val HoursByDaysCounterTable   = "day"
-    final val DaysByMonthsCounterTable  = "month"
-    final val MonthsByYearsCounterTable = "year"
-    final val WeeksByYearsCounterTable  = "year_week"
-    final val YearsCounterTable         = "forever"
+    final val HoursByDayCounterTable   = "day"
+    final val DaysByMonthCounterTable  = "month"
+    final val MonthsByYearCounterTable = "year"
+    final val WeeksByYearCounterTable  = "year_week"
+    final val YearsCounterTable        = "forever"
 
     private def apply(chronoUnit: ChronoUnit, byChronoUnit: ChronoUnit, tableName: String): CounterOn =
       instant =>
@@ -168,17 +149,17 @@ object CounterRepository {
                  , minorChronoUnit = chronoUnit
                  )
 
-    val HoursByDays: CounterOn =
-      CounterOn(HOURS, DAYS, HoursByDaysCounterTable)
+    val HoursByDay: CounterOn =
+      CounterOn(HOURS, DAYS, HoursByDayCounterTable)
 
-    val DaysByMonths: CounterOn =
-      CounterOn(DAYS, MONTHS, DaysByMonthsCounterTable)
+    val DaysByMonth: CounterOn =
+      CounterOn(DAYS, MONTHS, DaysByMonthCounterTable)
 
-    val MonthsByYears: CounterOn =
-      CounterOn(MONTHS, YEARS, MonthsByYearsCounterTable)
+    val MonthsByYear: CounterOn =
+      CounterOn(MONTHS, YEARS, MonthsByYearCounterTable)
 
-    val WeeksByYears: CounterOn =
-      CounterOn(WEEKS, YEARS, WeeksByYearsCounterTable)
+    val WeeksByYear: CounterOn =
+      CounterOn(WEEKS, YEARS, WeeksByYearCounterTable)
 
     val Years: CounterOn =
       instant =>
@@ -190,7 +171,28 @@ object CounterRepository {
                  )
 
     val All: Seq[CounterOn] =
-      Seq(HoursByDays, DaysByMonths, MonthsByYears, WeeksByYears, Years)
+      Seq(HoursByDay, DaysByMonth, MonthsByYear, WeeksByYear, Years)
+  }
+
+  type CounterSpanOn = Instant => Seq[CounterId]
+
+  object CounterSpanOn {
+
+    def apply(counterOn: CounterOn)(size: Int): CounterSpanOn =
+      start => {
+
+        def unroll(before: Instant, accumulator: Vector[CounterId]): Seq[CounterId] =
+          if (accumulator.length >= size)
+            accumulator
+          else {
+            val prevCounterId = counterOn(before)
+            unroll(prevCounterId.sampleBefore, prevCounterId +: accumulator)
+          }
+
+        require(size > 0, "size must be a positive integer")
+        val firstCounterId = counterOn(start)
+        unroll(firstCounterId.sampleBefore, Vector(firstCounterId))
+      }
   }
 
   implicit class StatementUtil(statement: Statement[_])(implicit session: CassandraSession, system: ActorSystem[_]) {
