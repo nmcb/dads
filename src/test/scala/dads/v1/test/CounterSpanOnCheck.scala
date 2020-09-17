@@ -8,6 +8,7 @@ package test
 import java.time._
 
 import org.scalacheck._
+
 import data._
 
 object CounterSpanOnCheck
@@ -24,9 +25,9 @@ object CounterSpanOnCheck
       counterSpan.length == counterSpan.toSet.size
     }
 
-  property("apply(instant) should return counter ids ordered by minor instant") =
+  property("apply(instant) should return counter ids ordered descending by minor instant") =
     forAll { (instant: Instant, counterSpanOn: CounterSpanOn) =>
       val counterSpan = counterSpanOn(instant)
-      counterSpan.sorted == counterSpan
+      counterSpan.sortBy(c => c.minorInstant).reverse == counterSpan
     }
 }

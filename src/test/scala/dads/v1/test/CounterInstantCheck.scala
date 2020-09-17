@@ -9,8 +9,8 @@ import java.time.temporal._
 
 import org.scalacheck._
 
-object CounterIdCheck
-  extends Properties("CounterId")
+object CounterInstantCheck
+  extends Properties("CounterInstants")
     with data.CounterRepositoryData {
 
   import Prop._
@@ -30,17 +30,17 @@ object CounterIdCheck
 
 
   property("majorInstant truncates string representation") =
-    forAll { (counterId: CounterId) =>
-      counterId.majorInstant.toString endsWith truncation(counterId.majorChronoUnit)
+    forAll { (counterInstant: CounterInstant) =>
+      counterInstant.majorInstant.toString endsWith truncation(counterInstant.majorChronoUnit)
     }
 
   property("minorInstant truncates string representation") =
-    forAll { (counterId: CounterId) =>
-      counterId.minorInstant.toString endsWith truncation(counterId.minorChronoUnit)
+    forAll { (counterInstant: CounterInstant) =>
+      counterInstant.minorInstant.toString endsWith truncation(counterInstant.minorChronoUnit)
     }
 
   property("sampleBefore <= minorInstant relative to the epoch") =
-    forAll { (counterId: CounterId) =>
-      counterId.sampleBefore.toEpochMilli <= counterId.minorInstant.toEpochMilli
+    forAll { (counterInstant: CounterInstant) =>
+      counterInstant.sampleBefore.toEpochMilli <= counterInstant.minorInstant.toEpochMilli
     }
 }

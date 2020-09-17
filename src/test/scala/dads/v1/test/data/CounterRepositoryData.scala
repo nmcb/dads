@@ -19,19 +19,23 @@ trait CounterRepositoryData {
 
   object ArbitraryCounters {
 
-    val YearSpread = 5
+    import Instant._
+    import ChronoUnit._
+
+    val YearSpread    = 5
+    val MaxSpanLength = 500
 
     implicit val arbitraryYearInstant: Arbitrary[Instant] =
       Arbitrary {
-        val start = Instant.EPOCH.toEpochMilli
-        val end   = Instant.now.toEpochMilli + YearSpread * ChronoUnit.YEARS.getDuration.dividedBy(2).toMillis
+        val start = EPOCH.toEpochMilli
+        val end   = now.toEpochMilli + YearSpread * YEARS.getDuration.dividedBy(2).toMillis
         choose(start, end).map(Instant.ofEpochMilli)
       }
 
     implicit val arbitraryCounterOn: Arbitrary[CounterOn] =
       Arbitrary(oneOf(CounterOn.All))
 
-    implicit val arbitraryCounterId: Arbitrary[CounterId] =
+    implicit val arbitraryCounterInstant: Arbitrary[CounterInstant] =
       Arbitrary {
         for {
           instant   <- arbitrary[Instant]
@@ -39,12 +43,10 @@ trait CounterRepositoryData {
         } yield counterOn(instant)
       }
 
-    val MaxLength = 500
-
     implicit val arbitraryCounterSpanOn: Arbitrary[CounterSpanOn] =
       Arbitrary {
         for {
-          length    <- choose(1, MaxLength)
+          length    <- choose(1, MaxSpanLength)
           counterOn <- arbitrary[CounterOn]
         } yield CounterSpanOn(counterOn)(length)
       }

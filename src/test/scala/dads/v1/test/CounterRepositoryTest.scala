@@ -92,7 +92,7 @@ class CounterRepositoryTest
 
   it should "round-trip getFrom/addToAll/getFrom adjustments for all counters" in {
 
-    case class Key(counterId: CounterId, adjustment: Adjustment)
+    case class Key(counterInstant: CounterInstant, adjustment: Adjustment)
 
     def loadAll(instant: Instant, adjustments: Seq[Adjustment]): Future[Map[Key,Long]] =
       Future.sequence(
@@ -116,6 +116,8 @@ class CounterRepositoryTest
       }
     }
   }
+
+  // FIXME add getSpan tests
 
   // UTILS
 
