@@ -94,7 +94,7 @@ class CounterRepositoryTest
 
     case class Key(counterInstant: CounterInstant, adjustment: Adjustment)
 
-    def loadAll(instant: Instant, adjustments: Seq[Adjustment]): Future[Map[Key,Long]] =
+    def loadAll(adjustments: Seq[Adjustment]): Future[Map[Key,Long]] =
       Future.sequence(
         CounterOn.All
           .flatMap(counterOn => adjustments.map(adjustment => counterOn -> adjustment)).toMap
@@ -107,9 +107,9 @@ class CounterRepositoryTest
 
     eventually {
       for {
-        before <- loadAll(now, fixture)
+        before <- loadAll(fixture)
         added  <- Future.sequence(fixture.map(adjustment => repository.addToAll(adjustment)))
-        after  <- loadAll(now, fixture)
+        after  <- loadAll(fixture)
       } yield {
         assert(added.size === CounterOn.All.size)
         assert(before.keys.map(key => after(key) === before(key) + key.adjustment.value).forall(isTrue))

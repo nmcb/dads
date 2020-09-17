@@ -31,7 +31,6 @@ message MeasurementDataCnf {
   string messageId = 1; // As received in the Ind.
 }
 
-
 message DeviceIdentity {
   uint32 type = 1; // No protobuf enum. // Current values are: 0=Unknown, 1=ALD, 2=ODA
 }
