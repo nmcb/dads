@@ -5,7 +5,7 @@
 package dads
 package v1
 
-import java.time._
+import scala.concurrent.duration._
 
 import com.typesafe.config._
 
@@ -14,8 +14,8 @@ import akka.actor.typed.scaladsl._
 
 object Main {
 
-  final val RealTimeServiceLevelAgreement: Duration =
-    Duration.ofSeconds(3)
+  final val RealTimeServiceLevelAgreement: FiniteDuration =
+    3.seconds
 
   def main(args: Array[String]): Unit = {
 
@@ -28,7 +28,7 @@ object Main {
 
 class Main(implicit system: ActorSystem[_]) {
 
-  import akka.actor.CoordinatedShutdown
+  import akka.actor._
   import org.slf4j._
 
   CoordinatedShutdown(system)

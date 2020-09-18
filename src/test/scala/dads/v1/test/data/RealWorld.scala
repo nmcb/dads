@@ -7,23 +7,34 @@ package dads.v1
 package test
 package data
 
-import java.time._
-import java.time.temporal._
+object RealWorld extends org.scalatest.concurrent.Eventually {
 
-import scala.util.Random
+  import java.time._
+  import java.time.temporal._
 
-object RealWorld {
+  import scala.util._
+  import scala.jdk._
 
+  import scala.concurrent.duration._
+
+  import org.scalatest.time._
+
+  import Main._
   import ChronoUnit._
+  import Span._
+  import DurationConverters._
 
   def now: Instant =
     Instant.now
 
   def future: Instant =
-    now.plus(Main.RealTimeServiceLevelAgreement)
+    now.plus(RealTimeServiceLevelAgreement.toJava).`with`(instantUncertaintyAdjusterMillis)
 
-  def InstantUncertaintyMillis: TemporalAmount =
-    Duration.ofMillis(10)
+  override implicit val patienceConfig: PatienceConfig =
+    PatienceConfig(RealTimeServiceLevelAgreement.toSpan, InstantUncertaintyMillis.toSpan)
+
+  def InstantUncertaintyMillis: FiniteDuration =
+    10.millis
 
   def instantUncertaintyAdjusterMillis: TemporalAdjuster =
     temporal => temporal.plus(Random.nextLong(10), MILLIS)
@@ -39,4 +50,26 @@ object RealWorld {
 
   implicit val instantUncertainty: Uncertainty[Instant] =
     instant => instant.`with`(instantUncertaintyAdjusterMillis)
+
+  // UTILS
+
+  implicit class ScalaTestSpanConverter(span: Span) {
+
+    def toJavaDuration: java.time.Duration =
+      convertSpanToDuration(span).toJava
+
+    def toScalaDuration: FiniteDuration =
+      convertSpanToDuration(span)
+
+  }
+
+  implicit class ScalaFiniteDurationConverter(duration: FiniteDuration) {
+
+    def toJavaDuration: java.time.Duration =
+      convertSpanToDuration(duration).toJava
+
+    def toSpan: org.scalatest.time.Span =
+      convertDurationToSpan(duration)
+
+  }
 }

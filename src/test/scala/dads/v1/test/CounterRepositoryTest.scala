@@ -18,7 +18,6 @@ import org.scalatest._
 import org.scalatest.concurrent._
 import org.scalatest.flatspec._
 import org.scalatest.matchers.should._
-import org.scalatest.time._
 
 import data._
 
@@ -32,9 +31,6 @@ class CounterRepositoryTest
 
   import CounterRepository._
 
-  override implicit val patienceConfig: PatienceConfig =
-    PatienceConfig(Span(3, Seconds), Span(250, Millis))
-
   implicit val system: ActorSystem =
     ActorSystem("RepositoryTestSystem")
 
@@ -44,13 +40,15 @@ class CounterRepositoryTest
   val settings: DadsSettings =
     DadsSettings()
 
-  val fixture: Seq[Adjustment] =
-    List( Adjustment(UUID.randomUUID, RealWorld.now, 666L)
-        , Adjustment(UUID.randomUUID, RealWorld.now, 667L)
-        , Adjustment(UUID.randomUUID, RealWorld.now, 668L)
-        , Adjustment(UUID.randomUUID, RealWorld.now, 669L)
-        , Adjustment(UUID.randomUUID, RealWorld.now, 670L)
+  val fixture: Seq[Adjustment] = {
+    import RealWorld._
+    List( Adjustment(UUID.randomUUID, now.spread, 666L)
+        , Adjustment(UUID.randomUUID, now.spread, 667L)
+        , Adjustment(UUID.randomUUID, now.spread, 668L)
+        , Adjustment(UUID.randomUUID, now.spread, 669L)
+        , Adjustment(UUID.randomUUID, now.spread, 670L)
         )
+  }
 
   def withAdjustments[A](f: Adjustment => Future[A]): Future[Seq[A]] =
     Future.sequence(fixture.map(f))
