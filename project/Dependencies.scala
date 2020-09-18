@@ -17,21 +17,21 @@ object Dependencies {
   val akkaPersistenceCassandraVersion = "1.0.1"
   val datastaxCassandraDriverVersion  = "4.9.0"
 
-  val scalaTestVersion  = "3.1.1"
+  val scalaTestVersion  = "3.2.0"
   val scalaCheckVersion = "1.14.1"
 
   // LIBRARIES
 
   lazy val platformDeps: Seq[ModuleID] =
-    Seq( "com.typesafe.akka"  %% "akka-actor-typed"             % akkaVersion
-       , "com.typesafe.akka"  %% "akka-persistence-cassandra"   % akkaPersistenceCassandraVersion
-       , "com.datastax.oss"   %  "java-driver-core"             % datastaxCassandraDriverVersion
-       , "com.datastax.oss"   %  "java-driver-query-builder"    % datastaxCassandraDriverVersion
+    Seq( "com.typesafe.akka"  %% "akka-actor-typed"           % akkaVersion
+       , "com.typesafe.akka"  %% "akka-persistence-cassandra" % akkaPersistenceCassandraVersion
+       , "com.datastax.oss"   %  "java-driver-core"           % datastaxCassandraDriverVersion
+       , "com.datastax.oss"   %  "java-driver-query-builder"  % datastaxCassandraDriverVersion
        )
 
   lazy val monitoringDeps: Seq[ModuleID] =
-    Seq( "com.typesafe.akka"  %% "akka-slf4j"                   % akkaVersion
-       , "ch.qos.logback"     %  "logback-classic"              % logbackVersion
+    Seq( "com.typesafe.akka"  %% "akka-slf4j"      % akkaVersion
+       , "ch.qos.logback"     %  "logback-classic" % logbackVersion
        )
 
   lazy val explicateAkkaRuntimeDeps: Seq[ModuleID] =
@@ -50,12 +50,8 @@ object Dependencies {
        ).map(_ % akkaVersion)
 
   lazy val testDeps: Seq[ModuleID] =
-    Seq( "org.scalatest"      %% "scalatest"                    % scalaTestVersion
-       , "org.scalacheck"     %% "scalacheck"                   % scalaCheckVersion
-       ).map(_ % "test, it")
-
-  lazy val explicateTestUtilDeps: Seq[ModuleID] =
-    Seq( "org.scalactic    "  %% "scalactic"                    % scalaTestVersion
+    Seq( "org.scalatest"      %% "scalatest"  % scalaTestVersion
+       , "org.scalacheck"     %% "scalacheck" % scalaCheckVersion
        ).map(_ % "test, it")
 
   // PLUGINS

@@ -18,7 +18,6 @@ lazy val dads =
                                           , explicateAkkaGrpcDeps
                                           , explicateAkkaRuntimeDeps
                                           , testDeps
-                                          , explicateTestUtilDeps
                                           ).flatten
 
              , scalacOptions       ++= hygienicScalacOps

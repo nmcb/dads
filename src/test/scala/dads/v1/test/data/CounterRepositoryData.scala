@@ -23,7 +23,7 @@ trait CounterRepositoryData {
     import ChronoUnit._
 
     val YearSpread    = 5
-    val MaxSpanLength = 5
+    val MaxSpanLength = 500
 
     implicit val arbitraryYearInstant: Arbitrary[Instant] =
       Arbitrary {
