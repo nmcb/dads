@@ -7,7 +7,7 @@ package test
 package data
 
 import java.time._
-import java.time.temporal.ChronoUnit
+import java.time.temporal._
 
 import org.scalacheck._
 

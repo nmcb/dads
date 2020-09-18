@@ -9,7 +9,7 @@ import java.time._
 
 case class Update( messageId    : String
                  , measurements : Seq[Measurement]
-                 )
+                 ) extends ProtoBuffed
 
 case class Measurement( sourceId  : SourceId
                       , timestamp : Instant

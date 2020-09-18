@@ -1,33 +1,30 @@
 /*
  * This is free and unencumbered software released into the public domain.
- *
  */
 
 package dads.v1
-package test
-package data
 
-object RealWorld extends org.scalatest.concurrent.Eventually {
+import org.scalatest.concurrent._
+
+trait RealWorld extends PatienceConfiguration {
 
   import java.time._
   import java.time.temporal._
-
-  import scala.util._
-  import scala.jdk._
-
-  import scala.concurrent.duration._
-
-  import org.scalatest.time._
+  import ChronoUnit._
 
   import Main._
-  import ChronoUnit._
+  import org.scalatest.time._
   import Span._
+
+  import scala.concurrent.duration._
+  import scala.jdk._
   import DurationConverters._
+  import scala.util._
 
   def now: Instant =
     Instant.now
 
-  def future: Instant =
+  def futureNow: Instant =
     now.plus(RealTimeServiceLevelAgreement.toJava).`with`(instantUncertaintyAdjusterMillis)
 
   override implicit val patienceConfig: PatienceConfig =

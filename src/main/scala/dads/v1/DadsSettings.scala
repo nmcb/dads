@@ -26,6 +26,9 @@ object DadsSettings {
   def apply(): DadsSettings =
     new DadsSettings(ConfigFactory.defaultApplication().getConfig("dads"))
 
+  def apply(config: Config): DadsSettings =
+    new DadsSettings(config)
+
   class ReceiverSettings private(config: Config) {
 
     lazy val host: String =

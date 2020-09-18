@@ -5,6 +5,7 @@
 package dads.v1
 package test
 
+import com.typesafe.config.ConfigFactory
 import org.scalatest.flatspec._
 import org.scalatest.matchers.should._
 
@@ -14,7 +15,18 @@ class DadsSettingsTest
 
   behavior of "DadsSettings"
 
-  it should "read settings from the local (test) application.conf" in {
+  it should "read all settings from provided (fake) application-test-dads.conf" in {
+    val settings: DadsSettings =
+      DadsSettings(
+        ConfigFactory
+          .load("application-test-dads")
+          .getConfig("dads"))
+
+    settings.realtimeKeyspace  shouldBe "realtimeKeyspace"
+    settings.counterKeyspace   shouldBe "counterKeyspace"
+  }
+
+  it should "read runtime settings from default (main) application.conf" in {
     val settings = DadsSettings()
 
     settings.realtimeKeyspace  shouldBe "dads_v1"

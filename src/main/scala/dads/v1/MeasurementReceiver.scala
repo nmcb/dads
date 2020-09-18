@@ -4,18 +4,20 @@
 
 package dads.v1
 
-
 import scala.concurrent._
+
 import akka.actor.typed._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl._
 
 import transport._
-import transport.grpc.v1._
-
-import DadsSettings._
+import grpc._
 
 object MeasurementReceiver {
+
+  import v1.MeasurementDataCnf
+  import v1.MeasurementDataInd
+  import v1.MeasurementService
 
   def defaultMeasurementService(implicit actorSystem: ActorSystem[_]): MeasurementService =
     new MeasurementReceiver.DefaultMeasurementService(CounterRepository(DadsSettings()))
@@ -32,7 +34,7 @@ object MeasurementReceiver {
     def process(ind: MeasurementDataInd): Future[MeasurementDataCnf] = {
       val update = ind.as[Update]
 
-      // FIXME currently only returns a cnf if all adjustments succeed
+      // FIXME client protocol/interface, currently only returns a cnf if all adjustments succeed
       Future.sequence(
         update
           .measurements
@@ -43,7 +45,9 @@ object MeasurementReceiver {
   }
 }
 
-class MeasurementReceiver(settings: ReceiverSettings)(implicit system: ActorSystem[_]) {
+class MeasurementReceiver(settings: DadsSettings.ReceiverSettings)(implicit system: ActorSystem[_]) {
+
+  import v1.MeasurementServiceHandler
 
   //  TODO System inbound boundary:
   //
@@ -64,19 +68,24 @@ class MeasurementReceiver(settings: ReceiverSettings)(implicit system: ActorSyst
       system.executionContext
 
     val service: HttpRequest => Future[HttpResponse] =
-      MeasurementServiceHandler(
-        new MeasurementReceiver.DefaultMeasurementService(
-          CounterRepository(DadsSettings())))
+      MeasurementServiceHandler(MeasurementReceiver.defaultMeasurementService)
 
-    val binding: Future[Http.ServerBinding] =
-      Http()(system.toClassic).bindAndHandleAsync(
-        service,
-        interface = settings.host,
-        port = settings.port,
-        connectionContext = HttpConnectionContext())
+    val futureServerBinding: Future[Http.ServerBinding] =
+      Http()(system.toClassic)
+        .bindAndHandleAsync( handler           = service
+                           , interface         = settings.host
+                           , port              = settings.port
+                           , connectionContext = HttpConnectionContext())
+
+    futureServerBinding
+      .map( binding =>
+        binding
+          .whenTerminationSignalIssued
+          .map( deadline =>
+            binding.terminate(deadline.time)))
 
     system.log.info(s"MeasurementReceiver running at ${settings.host}:${settings.port}")
 
-    binding
+    futureServerBinding
   }
 }

@@ -50,8 +50,9 @@ object Dependencies {
        ).map(_ % akkaVersion)
 
   lazy val testDeps: Seq[ModuleID] =
-    Seq( "org.scalatest"      %% "scalatest"  % scalaTestVersion
-       , "org.scalacheck"     %% "scalacheck" % scalaCheckVersion
+    Seq( "org.scalatest"      %% "scalatest"                % scalaTestVersion
+       , "org.scalacheck"     %% "scalacheck"               % scalaCheckVersion
+       , "com.typesafe.akka"  %% "akka-actor-testkit-typed" % akkaVersion
        ).map(_ % "test, it")
 
   // PLUGINS
