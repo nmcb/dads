@@ -5,12 +5,17 @@
 package dads
 package v1
 
+import java.time._
+
 import com.typesafe.config._
 
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
 
 object Main {
+
+  final val RealTimeServiceLevelAgreement: Duration =
+    Duration.ofSeconds(3)
 
   def main(args: Array[String]): Unit = {
 

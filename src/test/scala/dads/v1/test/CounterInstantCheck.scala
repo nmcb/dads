@@ -21,13 +21,12 @@ object CounterInstantCheck
     chronoUnit match {
       case ChronoUnit.HOURS   =>               "00:00Z"
       case ChronoUnit.DAYS    =>           "T00:00:00Z"
-      case ChronoUnit.WEEKS   =>           "T00:00:00Z" // FIXME could compute a less resolute postfix
+      case ChronoUnit.WEEKS   =>           "T00:00:00Z"
       case ChronoUnit.MONTHS  =>         "01T00:00:00Z"
       case ChronoUnit.YEARS   =>      "01-01T00:00:00Z"
       case ChronoUnit.FOREVER => "1970-01-01T00:00:00Z"
       case _                  => throw new IllegalArgumentException(s"chronoUnit=$chronoUnit")
     }
-
 
   property("majorInstant truncates string representation") =
     forAll { (counterInstant: CounterInstant) =>

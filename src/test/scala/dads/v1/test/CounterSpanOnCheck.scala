@@ -19,7 +19,7 @@ object CounterSpanOnCheck
   import CounterRepository._
   import ArbitraryCounters._
   import Prop._
-  import TripleEquals._
+  import TypeCheckedTripleEquals._
 
   property("apply(instant) should not result in duplicate counter ids") =
     forAll { (instant: Instant, counterSpanOn: CounterSpanOn) =>

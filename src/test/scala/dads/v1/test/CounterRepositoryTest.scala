@@ -20,8 +20,11 @@ import org.scalatest.flatspec._
 import org.scalatest.matchers.should._
 import org.scalatest.time._
 
+import data._
+
 class CounterRepositoryTest
   extends AsyncFlatSpec
+    with CounterRepositoryData
     with Matchers
     with TimeLimits
     with BeforeAndAfterAll
@@ -41,15 +44,12 @@ class CounterRepositoryTest
   val settings: DadsSettings =
     DadsSettings()
 
-  val now: Instant =
-    Instant.now
-
   val fixture: Seq[Adjustment] =
-    List( Adjustment(UUID.randomUUID, now, 666L)
-        , Adjustment(UUID.randomUUID, now, 667L)
-        , Adjustment(UUID.randomUUID, now, 668L)
-        , Adjustment(UUID.randomUUID, now, 669L)
-        , Adjustment(UUID.randomUUID, now, 670L)
+    List( Adjustment(UUID.randomUUID, RealWorld.now, 666L)
+        , Adjustment(UUID.randomUUID, RealWorld.now, 667L)
+        , Adjustment(UUID.randomUUID, RealWorld.now, 668L)
+        , Adjustment(UUID.randomUUID, RealWorld.now, 669L)
+        , Adjustment(UUID.randomUUID, RealWorld.now, 670L)
         )
 
   def withAdjustments[A](f: Adjustment => Future[A]): Future[Seq[A]] =
@@ -58,13 +58,12 @@ class CounterRepositoryTest
   val repository: CounterRepository =
     CounterRepository(settings)(system.toTyped)
 
-  behavior of "CounterRepository"
-
   override def afterAll(): Unit = {
     super.afterAll()
     system.terminate()
   }
 
+  behavior of "CounterRepository"
 
   it should "round-trip getFrom/addTo/getFrom should be able to update all counters" in {
 
@@ -85,7 +84,7 @@ class CounterRepositoryTest
            , tripRoundWith(CounterOn.MonthsByYear)
            , tripRoundWith(CounterOn.WeeksByYear)
            , tripRoundWith(CounterOn.Years)
-        ).map(tripRoundWithAll => tripRoundWithAll(now))
+        ).map(tripRoundWithAll => tripRoundWithAll(RealWorld.future))
       ).map(toSucceeded)
     }
   }
@@ -100,7 +99,7 @@ class CounterRepositoryTest
           .flatMap(counterOn => adjustments.map(adjustment => counterOn -> adjustment)).toMap
           .map({ case (counterOn,adjustment) =>
             repository
-              .getFrom(counterOn)(adjustment.sourceId)(adjustment.instant)
+              .getFrom(counterOn)(adjustment.sourceId)(RealWorld.now)
               .map(counter => Key(counterOn(adjustment.instant),adjustment) -> counter)
           }).toSeq
       ).map(_.toMap)
