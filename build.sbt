@@ -15,12 +15,12 @@ lazy val dads =
 
              , libraryDependencies ++= Seq( platformDeps
                                           , monitoringDeps
+                                          , explicateAkkaGrpcDeps
+                                          , explicateAkkaRuntimeDeps
                                           , testDeps
-                                          , bumpedAkkaRuntimeDeps
-                                          , bumpedGrpcDeps
+                                          , explicateTestUtilDeps
                                           ).flatten
 
-             , dependencyOverrides ++= bumpedAkkaRuntimeDeps ++ bumpedGrpcDeps
              , scalacOptions       ++= hygienicScalacOps
              , Defaults.itSettings
              , onPublishMaskDocumentation

@@ -7,14 +7,16 @@ package dads.v1
 import java.time._
 
 import scala.concurrent._
+
 import akka._
 import akka.actor.typed._
 import akka.stream.scaladsl._
 import akka.stream.alpakka.cassandra._
 import akka.stream.alpakka.cassandra.scaladsl._
+
 import com.datastax.oss.driver.api.core.cql._
 import com.datastax.oss.driver.api.querybuilder._
-import com.datastax.oss.driver.api.querybuilder.term.Term
+import com.datastax.oss.driver.api.querybuilder.term._
 
 object CounterRepository {
 
@@ -118,7 +120,7 @@ object CounterRepository {
                        , value    : Long
                        )
 
-  case class CounterInstant(majorInstant    : Instant
+  case class CounterInstant(  majorInstant    : Instant
                             , minorInstant    : Instant
                             , majorChronoUnit : ChronoUnit
                             , minorChronoUnit : ChronoUnit
@@ -151,8 +153,9 @@ object CounterRepository {
     private[this] def withRepositoryOffsetTruncatedToDays(adjuster: TemporalAdjuster)(instant: Instant): Instant =
       instant.atZone(TimeZoneOfRepositoryOffset).truncatedTo(DAYS).`with`(adjuster).toInstant
 
-    implicit val counterInstantOrdering: Ordering[CounterInstant] =
-      (x: CounterInstant, y: CounterInstant) => x.minorInstant.compareTo(y.minorInstant)
+    /** Descending towards the past by `CounterInstant.minorInstant`. */
+    implicit val counterInstantDescendingOrder: Ordering[CounterInstant] =
+      (x: CounterInstant, y: CounterInstant) => y.minorInstant.compareTo(x.minorInstant)
   }
 
   case class CounterOn(tableName: String, underlying: Instant => CounterInstant)
@@ -176,10 +179,10 @@ object CounterRepository {
       CounterOn( tableName
                , instant =>
                    CounterInstant( majorInstant    = truncatedTo(byChronoUnit)(instant)
-                                  , minorInstant    = truncatedTo(chronoUnit)(instant)
-                                  , majorChronoUnit = byChronoUnit
-                                  , minorChronoUnit = chronoUnit
-                                  ))
+                                 , minorInstant    = truncatedTo(chronoUnit)(instant)
+                                 , majorChronoUnit = byChronoUnit
+                                 , minorChronoUnit = chronoUnit
+                                 ))
 
     val HoursByDay: CounterOn =
       CounterOn(HOURS, DAYS)(HoursByDayCounterTable)
@@ -233,7 +236,6 @@ object CounterRepository {
 
       val firstCounterInstant = counterOn(start)
       loop(firstCounterInstant.sampleBefore, Vector(firstCounterInstant))
-
     }
   }
 

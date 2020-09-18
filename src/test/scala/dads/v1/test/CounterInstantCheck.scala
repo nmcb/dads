@@ -10,7 +10,7 @@ import java.time.temporal._
 import org.scalacheck._
 
 object CounterInstantCheck
-  extends Properties("CounterInstants")
+  extends Properties("CounterInstant")
     with data.CounterRepositoryData {
 
   import Prop._

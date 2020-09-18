@@ -34,12 +34,7 @@ object Dependencies {
        , "ch.qos.logback"     %  "logback-classic"              % logbackVersion
        )
 
-  lazy val testUtilDeps: Seq[ModuleID] =
-    Seq( "org.scalatest"      %% "scalatest"                    % scalaTestVersion
-       , "org.scalacheck"     %% "scalacheck"                   % scalaCheckVersion
-       )
-
-  lazy val bumpedAkkaRuntimeDeps: Seq[ModuleID] =
+  lazy val explicateAkkaRuntimeDeps: Seq[ModuleID] =
     Seq( "com.typesafe.akka"  %% "akka-persistence"
        , "com.typesafe.akka"  %% "akka-discovery"
        , "com.typesafe.akka"  %% "akka-remote"
@@ -49,14 +44,19 @@ object Dependencies {
        , "com.typesafe.akka"  %% "akka-cluster-tools"
        ).map(_ % akkaVersion)
 
-  lazy val bumpedGrpcDeps: Seq[ModuleID] =
-    Seq( "com.typesafe.akka"  %% "akka-protobuf"                % akkaVersion
-       , "com.typesafe.akka"  %% "akka-stream"                  % akkaVersion
-       )
+  lazy val explicateAkkaGrpcDeps: Seq[ModuleID] =
+    Seq( "com.typesafe.akka"  %% "akka-protobuf"
+       , "com.typesafe.akka"  %% "akka-stream"
+       ).map(_ % akkaVersion)
 
   lazy val testDeps: Seq[ModuleID] =
-    testUtilDeps.map(_ % "test, it")
+    Seq( "org.scalatest"      %% "scalatest"                    % scalaTestVersion
+       , "org.scalacheck"     %% "scalacheck"                   % scalaCheckVersion
+       ).map(_ % "test, it")
 
+  lazy val explicateTestUtilDeps: Seq[ModuleID] =
+    Seq( "org.scalactic    "  %% "scalactic"                    % scalaTestVersion
+       ).map(_ % "test, it")
 
   // PLUGINS
 
