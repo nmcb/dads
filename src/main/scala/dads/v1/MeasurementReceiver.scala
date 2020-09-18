@@ -5,13 +5,13 @@
 package dads.v1
 
 import scala.concurrent._
-
 import akka.actor.typed._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl._
-
 import transport._
 import grpc._
+
+import scala.util.{Failure, Success}
 
 object MeasurementReceiver {
 
@@ -81,8 +81,17 @@ class MeasurementReceiver(settings: DadsSettings.ReceiverSettings)(implicit syst
       .map( binding =>
         binding
           .whenTerminationSignalIssued
-          .map( deadline =>
-            binding.terminate(deadline.time)))
+          .map(deadline => {
+            system.log.info(s"Stopping MeasurementReceiver at ${settings.host}:${settings.port}")
+            binding.terminate(deadline.time).onComplete {
+              case Success(termination) =>
+                system.log.info(s"MeasurementReceiver at ${settings.host}:${settings.port} terminated")
+              case Failure(exception) =>
+                system.log.info(s"MeasurementReceiver at ${settings.host}:${settings.port} failed to terminate")
+                system.log.error(s"Message: ${exception.getMessage}", exception)
+                system.log.info(s"MeasurementReceiver at ${settings.host}:${settings.port} killeds")
+            }
+          }))
 
     system.log.info(s"MeasurementReceiver running at ${settings.host}:${settings.port}")
 

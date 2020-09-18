@@ -24,7 +24,7 @@ class DadsSettings private (config: Config) {
 object DadsSettings {
 
   def apply(): DadsSettings =
-    new DadsSettings(ConfigFactory.defaultApplication().getConfig("dads"))
+    new DadsSettings(ConfigFactory.defaultApplication.getConfig("dads"))
 
   def apply(config: Config): DadsSettings =
     new DadsSettings(config)

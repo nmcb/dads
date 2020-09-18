@@ -20,7 +20,10 @@ object Main {
   def main(args: Array[String]): Unit = {
 
     implicit val system: ActorSystem[Nothing] =
-      ActorSystem[Nothing](Behaviors.empty, "MainSystem", ConfigFactory.defaultApplication())
+      ActorSystem[Nothing]( Behaviors.empty
+                          , "MainSystem"
+                          , ConfigFactory.defaultApplication
+                          )
 
     new Main().run()
   }
