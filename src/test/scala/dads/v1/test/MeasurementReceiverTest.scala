@@ -24,7 +24,7 @@ import akka.actor.testkit.typed.scaladsl._
 
 class MeasurementReceiverTest
   extends AnyWordSpec
-    with BeforeAndAfter
+    with BeforeAndAfterAll
     with Matchers
     with ScalaFutures
     with RealWorld
@@ -49,16 +49,17 @@ class MeasurementReceiverTest
   implicit val clientSystem: ActorSystem[_] =
     ActorSystem(Behaviors.empty, "MeasurementServiceClient")
 
-  after {
+  override protected def afterAll(): Unit = {
     clientSystem.terminate()
     httpServerBinding.terminate(Main.RealTimeServiceLevelAgreement)
   }
+
 
   val client: MeasurementServiceClient =
     MeasurementServiceClient(
       GrpcClientSettings
         .connectToServiceAt(settings.host, settings.port)
-        .withTls(false)) // FIXME Should not be used in production
+        .withTls(false)) // FIXME should not be used in production
 
   "MeasurementReceiver" should {
     "process a single measurement data indication" in {

@@ -4,6 +4,8 @@
 
 package dads.v1
 
+import akka.actor.CoordinatedShutdown
+
 import scala.concurrent._
 import akka.actor.typed._
 import akka.http.scaladsl.model._
@@ -38,7 +40,7 @@ object MeasurementReceiver {
       Future.sequence(
         update
           .measurements
-          .map(measurement => Adjustment(measurement.sourceId, measurement.timestamp, measurement.value))
+          .map(measurement => Adjustment(measurement.sourceId, measurement.timestamp, measurement.counterAdjustment))
           .map(adjustment  => repository.addToAll(adjustment)))
         .map(_ => MeasurementDataCnf(update.messageId))
     }
@@ -75,21 +77,22 @@ class MeasurementReceiver(settings: DadsSettings.ReceiverSettings)(implicit syst
         .bindAndHandleAsync( handler           = service
                            , interface         = settings.host
                            , port              = settings.port
-                           , connectionContext = HttpConnectionContext())
+                           , connectionContext = HttpConnectionContext()
+                           )
 
     futureServerBinding
       .map( binding =>
         binding
           .whenTerminationSignalIssued
           .map(deadline => {
-            system.log.info(s"Stopping MeasurementReceiver at ${settings.host}:${settings.port}")
-            binding.terminate(deadline.time).onComplete {
+            system.log.info(s"Stopping MeasurementReceiver at ${settings.host}:${settings.port} in ${deadline.time}")
+            binding.terminate(deadline.time).onComplete { // FIXME terminate seems to be called twice
               case Success(termination) =>
                 system.log.info(s"MeasurementReceiver at ${settings.host}:${settings.port} terminated")
               case Failure(exception) =>
                 system.log.info(s"MeasurementReceiver at ${settings.host}:${settings.port} failed to terminate")
                 system.log.error(s"Message: ${exception.getMessage}", exception)
-                system.log.info(s"MeasurementReceiver at ${settings.host}:${settings.port} killeds")
+                system.log.info(s"MeasurementReceiver at ${settings.host}:${settings.port} killed")
             }
           }))
 

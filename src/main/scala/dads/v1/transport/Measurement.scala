@@ -7,12 +7,12 @@ package transport
 
 import java.time._
 
-case class Update( messageId    : String
+case class Update( messageId    : MessageId
                  , measurements : Seq[Measurement]
                  ) extends ProtoBuffed
 
-case class Measurement( sourceId  : SourceId
-                      , timestamp : Instant
-                      , value     : Long
-                      , unit      : NaturalUnit
+case class Measurement( sourceId          : SourceId
+                      , timestamp         : Instant
+                      , counterAdjustment : Long
+                      , unit              : NaturalUnit
                       ) extends ProtoBuffed

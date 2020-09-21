@@ -6,6 +6,7 @@ package dads
 
 package object v1 {
 
+  type MessageId = String
   type SourceId  = java.util.UUID
 
   // Todo squants
