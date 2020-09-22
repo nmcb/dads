@@ -12,13 +12,17 @@ jobs:
       - checkout
       - run:
           name: Wait for Cassandra
-          command: dockerize -wait tcp://localhost:9042 -timeout 1m
+          command: |
+            CASSANDRA_CONTAINER=$(docker ps | grep cassandra | awk '{ print $1 }')
+            while ! docker exec -it $CASSANDRA_CONTAINER cqlsh -e 'describe cluster' ; do
+              sleep 1
+            done
       - run:
           name: Cassandra setup
           command: |
-            CASSANDRA_CONTAINER_PID=$(docker ps | grep cassandra | awk '{ print $1 }')
-            docker exec -it $CASSANDRA_CONTAINER_PID cqlsh -f src/main/resources/cassandra/initialise.dev.cql
-            docker exec -it $CASSANDRA_CONTAINER_PID cqlsh -f src/main/resources/cassandra/dads.v1.cql
+            CASSANDRA_CONTAINER=$(docker ps | grep cassandra | awk '{ print $1 }')
+            docker exec -it $CASSANDRA_CONTAINER cqlsh -f src/main/resources/cassandra/initialise.dev.cql
+            docker exec -it $CASSANDRA_CONTAINER cqlsh -f src/main/resources/cassandra/dads.v1.cql
       - run:
           name: Download SBT
           command: |
