@@ -35,6 +35,14 @@ object CounterRepository {
   final val MajorInstantIdColumn = "rowtime"
   final val MinorInstantIdColumn = "coltime"
 
+  sealed abstract class Bucket(val tableName: String)
+  case object HourByDay   extends Bucket("day")
+  case object DayByMonth  extends Bucket("month")
+  case object MonthByYear extends Bucket("year")
+  case object WeekByYear  extends Bucket("year_week")
+  case object Year        extends Bucket("forever")
+
+
   def apply(settings: DadsSettings)(implicit system: ActorSystem[_]): CounterRepository =
     new CounterRepository {
 
@@ -50,12 +58,15 @@ object CounterRepository {
           .sessionFor(CassandraSessionSettings())
 
       def addToAll(adjustment: Adjustment): Future[Done] =
-        Future.sequence(All.map(counterOn => addTo(counterOn)(adjustment))).map(toDone)
+        Future.sequence(
+          Seq(HourByDayCounterOn, DayByMonthCounterOn, MonthByYearCounterOn, WeekByYearCounterOn, YearCounterOn)
+            .map(counterOn => addTo(counterOn)(adjustment))
+        ).map(toDone)
 
       def addTo(counterOn: CounterOn)(adjustment: Adjustment): Future[Done] = {
         val counter = counterOn(adjustment.instant)
 
-        update(settings.counterKeyspace, counterOn.tableName)
+        update(settings.counterKeyspace, counter.bucket.tableName)
           .increment(CounterValueColumn, literal(adjustment.value))
           .whereColumn(SourceIdColumn).isEqualTo(literal(adjustment.sourceId))
           .whereColumn(MajorInstantIdColumn).isEqualTo(literal(counter.majorInstant.toEpochMilli))
@@ -67,7 +78,7 @@ object CounterRepository {
       def getFrom(counterOn: CounterOn)(sourceId: SourceId)(instant: Instant): Future[Long] = {
         val counter = counterOn(instant)
 
-        selectFrom(settings.counterKeyspace, counterOn.tableName)
+        selectFrom(settings.counterKeyspace, counter.bucket.tableName)
           .column(CounterValueColumn)
           .column(SourceIdColumn)
           .column(MajorInstantIdColumn)
@@ -92,7 +103,7 @@ object CounterRepository {
         val majorInstants: java.util.List[Term] =
           counters.map(_.minorInstant.toEpochMilli).map(literal).asInstanceOf[Seq[Term]].asJava
 
-        selectFrom(settings.counterKeyspace, counterSpanOn.tableName)
+        selectFrom(settings.counterKeyspace, counterSpanOn.bucket.tableName)
           .column(CounterValueColumn)
           .column(SourceIdColumn)
           .column(MajorInstantIdColumn)
@@ -120,31 +131,33 @@ object CounterRepository {
                        , value    : Long
                        )
 
-  case class CounterInstant(  majorInstant    : Instant
-                            , minorInstant    : Instant
-                            , majorChronoUnit : ChronoUnit
-                            , minorChronoUnit : ChronoUnit
-                            ) {
+  case class Counter(  majorInstant    : Instant
+                    , minorInstant    : Instant
+                    , majorChronoUnit : ChronoUnit
+                    , minorChronoUnit : ChronoUnit
+                    , bucket          : Bucket
+                    ) {
 
     lazy val sampleBefore: Instant =
       minorInstant
         .minusMillis(
           minorChronoUnit
             .getDuration
-            .dividedBy(CounterInstant.SampleFactor)
+            .dividedBy(Counter.SampleFactor)
             .toMillis)
   }
 
-  object CounterInstant {
+  object Counter {
 
     val SampleFactor = 3
 
     def truncatedTo(chronoUnit: ChronoUnit)(instant: Instant): Instant =
       chronoUnit match {
-        case YEARS  => withRepositoryOffsetTruncatedToDays(firstDayOfYear)(instant)
-        case MONTHS => withRepositoryOffsetTruncatedToDays(firstDayOfMonth)(instant)
-        case WEEKS  => withRepositoryOffsetTruncatedToDays(firstDayOfRepositoryWeek)(instant)
-        case _      => instant.truncatedTo(chronoUnit)
+        case FOREVER => Instant.EPOCH
+        case YEARS   => withRepositoryOffsetTruncatedToDays(firstDayOfYear)(instant)
+        case MONTHS  => withRepositoryOffsetTruncatedToDays(firstDayOfMonth)(instant)
+        case WEEKS   => withRepositoryOffsetTruncatedToDays(firstDayOfRepositoryWeek)(instant)
+        case _       => instant.truncatedTo(chronoUnit)
       }
 
     private[this] val firstDayOfRepositoryWeek: TemporalAdjuster =
@@ -154,89 +167,86 @@ object CounterRepository {
       instant.atZone(TimeZoneOfRepositoryOffset).truncatedTo(DAYS).`with`(adjuster).toInstant
 
     /** Descending towards the past by `CounterInstant.minorInstant`. */
-    implicit val counterInstantDescendingOrder: Ordering[CounterInstant] =
-      (x: CounterInstant, y: CounterInstant) => y.minorInstant.compareTo(x.minorInstant)
+    implicit val counterInstantDescendingOrder: Ordering[Counter] =
+      (x: Counter, y: Counter) => y.minorInstant.compareTo(x.minorInstant)
   }
 
-  case class CounterOn(tableName: String, underlying: Instant => CounterInstant)
-    extends (Instant => CounterInstant) {
-
-    def apply(instant: Instant): CounterInstant =
-      underlying(instant)
-  }
+  type CounterOn = Instant => Counter
 
   object CounterOn {
 
-    import CounterInstant._
+    import Counter._
 
-    final val HoursByDayCounterTable   = "day"
-    final val DaysByMonthCounterTable  = "month"
-    final val MonthsByYearCounterTable = "year"
-    final val WeeksByYearCounterTable  = "year_week"
-    final val YearsCounterTable        = "forever"
+    def apply(chronoUnit: ChronoUnit, byChronoUnit: ChronoUnit)(bucket: Bucket): CounterOn =
+      instant => Counter( majorInstant    = truncatedTo(byChronoUnit)(instant)
+                        , minorInstant    = truncatedTo(chronoUnit)(instant)
+                        , majorChronoUnit = byChronoUnit
+                        , minorChronoUnit = chronoUnit
+                        , bucket = bucket
+                        )
 
-    private def apply(chronoUnit: ChronoUnit, byChronoUnit: ChronoUnit)(tableName: String): CounterOn =
-      CounterOn( tableName
-               , instant =>
-                   CounterInstant( majorInstant    = truncatedTo(byChronoUnit)(instant)
-                                 , minorInstant    = truncatedTo(chronoUnit)(instant)
-                                 , majorChronoUnit = byChronoUnit
-                                 , minorChronoUnit = chronoUnit
-                                 ))
+    val HourByDayCounterOn: CounterOn =
+      CounterOn(HOURS, DAYS)(HourByDay)
 
-    val HoursByDay: CounterOn =
-      CounterOn(HOURS, DAYS)(HoursByDayCounterTable)
+    val DayByMonthCounterOn: CounterOn =
+      CounterOn(DAYS, MONTHS)(DayByMonth)
 
-    val DaysByMonth: CounterOn =
-      CounterOn(DAYS, MONTHS)(DaysByMonthCounterTable)
+    val MonthByYearCounterOn: CounterOn =
+      CounterOn(MONTHS, YEARS)(MonthByYear)
 
-    val MonthsByYear: CounterOn =
-      CounterOn(MONTHS, YEARS)(MonthsByYearCounterTable)
+    val WeekByYearCounterOn: CounterOn =
+      CounterOn(WEEKS, YEARS)(WeekByYear)
 
-    val WeeksByYear: CounterOn =
-      CounterOn(WEEKS, YEARS)(WeeksByYearCounterTable)
-
-    val Years: CounterOn =
-      CounterOn( YearsCounterTable
-               , instant =>
-                   CounterInstant( majorInstant    = Instant.EPOCH
-                                 , minorInstant    = truncatedTo(YEARS)(instant)
-                                 , majorChronoUnit = FOREVER
-                                 , minorChronoUnit = YEARS
-                                 ))
-
-    val All: Seq[CounterOn] =
-      Seq(HoursByDay, DaysByMonth, MonthsByYear, WeeksByYear, Years)
+    val YearCounterOn: CounterOn =
+      instant => Counter( majorInstant    = Instant.EPOCH
+                        , minorInstant    = truncatedTo(YEARS)(instant)
+                        , majorChronoUnit = FOREVER
+                        , minorChronoUnit = YEARS
+                        , bucket = Year
+                        )
   }
 
-  case class CounterSpanOn(tableName: String, underlying: Instant => Seq[CounterInstant])
-    extends (Instant => Seq[CounterInstant]) {
+  case class CounterSpanOn(bucket: Bucket, underlying: Instant => Seq[Counter])
+    extends (Instant => Seq[Counter]) {
 
-    def apply(instant: Instant): Seq[CounterInstant] =
+    def apply(instant: Instant): Seq[Counter] =
       underlying(instant)
   }
 
   object CounterSpanOn {
 
-    def apply(counterOn: CounterOn)(size: Int): CounterSpanOn =
-      CounterSpanOn( counterOn.tableName
-                   , start => unroll(counterOn, size, start)
-                   )
+    def apply(chronoUnit: ChronoUnit, byChronoUnit: ChronoUnit)(bucket: Bucket)(size: Int): CounterSpanOn =
+      CounterSpanOn(bucket, start => unroll(size, start, CounterOn(chronoUnit, byChronoUnit)(bucket)))
 
-    private def unroll(counterOn: CounterOn, size: Int, start: Instant) = {
+    private def unroll(size: Int, start: Instant, counterOn: CounterOn) = {
       require(size > 0, "size must be a positive integer")
 
-      def loop(before: Instant, accumulator: Vector[CounterInstant]): Seq[CounterInstant] =
+      def loop(before: Instant, accumulator: Vector[Counter]): Seq[Counter] =
         if (accumulator.length >= size)
-        accumulator
+          accumulator
         else {
-            val prevCounterInstant = counterOn(before)
-            loop(prevCounterInstant.sampleBefore, accumulator :+ prevCounterInstant)
+          val prevCounter = counterOn(before)
+          loop(prevCounter.sampleBefore, accumulator :+ prevCounter)
         }
 
-      val firstCounterInstant = counterOn(start)
-      loop(firstCounterInstant.sampleBefore, Vector(firstCounterInstant))
+      val firstCounter = counterOn(start)
+      loop(firstCounter.sampleBefore, Vector(firstCounter))
     }
+
+    val HourByDaySpanOf: Int => CounterSpanOn =
+      size => CounterSpanOn(HOURS, DAYS)(HourByDay)(size)
+
+    val DayByMonthSpanOf: Int => CounterSpanOn =
+      size => CounterSpanOn(DAYS, MONTHS)(DayByMonth)(size)
+
+    val MonthByYearSpanOf: Int => CounterSpanOn =
+      size => CounterSpanOn(MONTHS, YEARS)(MonthByYear)(size)
+
+    val WeekByYearSpanOf: Int => CounterSpanOn =
+      size => CounterSpanOn(WEEKS, YEARS)(WeekByYear)(size)
+
+    val YearSpanOf: Int => CounterSpanOn =
+      size => CounterSpanOn(YEARS, FOREVER)(Year)(size)
   }
 
   implicit class StatementUtil(statement: Statement[_])(implicit session: CassandraSession, system: ActorSystem[_]) {
@@ -264,5 +274,3 @@ trait CounterRepository {
 
   def getFrom(counters: CounterSpanOn)(sourceId: SourceId)(instant: Instant): Future[Seq[Long]]
 }
-
-

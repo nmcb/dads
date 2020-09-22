@@ -29,17 +29,17 @@ object CounterInstantCheck
     }
 
   property("majorInstant truncates string representation") =
-    forAll { (counterInstant: CounterInstant) =>
+    forAll { (counterInstant: Counter) =>
       counterInstant.majorInstant.toString endsWith truncation(counterInstant.majorChronoUnit)
     }
 
   property("minorInstant truncates string representation") =
-    forAll { (counterInstant: CounterInstant) =>
+    forAll { (counterInstant: Counter) =>
       counterInstant.minorInstant.toString endsWith truncation(counterInstant.minorChronoUnit)
     }
 
   property("sampleBefore <= minorInstant relative to the epoch") =
-    forAll { (counterInstant: CounterInstant) =>
+    forAll { (counterInstant: Counter) =>
       counterInstant.sampleBefore.toEpochMilli <= counterInstant.minorInstant.toEpochMilli
     }
 }

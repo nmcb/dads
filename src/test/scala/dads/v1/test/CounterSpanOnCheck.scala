@@ -30,6 +30,6 @@ object CounterSpanOnCheck
   property("apply(instant) should return counter instants sorted descending by minor instant") =
     forAll { (instant: Instant, counterSpanOn: CounterSpanOn) =>
       val counterSpan = counterSpanOn(instant)
-      counterSpan === counterSpan.sorted(CounterInstant.counterInstantDescendingOrder)
+      counterSpan === counterSpan.sorted(Counter.counterInstantDescendingOrder)
     }
 }

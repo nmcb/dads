@@ -31,6 +31,7 @@ class CounterRepositoryTest
     with RealWorld {
 
   import CounterRepository._
+  import CounterOn._
 
   implicit val system: ActorSystem =
     ActorSystem("CounterRepositoryTestSystem")
@@ -78,11 +79,11 @@ class CounterRepositoryTest
 
     eventually {
       Future.sequence(
-        Seq( tripRoundWith(CounterOn.HoursByDay)
-           , tripRoundWith(CounterOn.DaysByMonth)
-           , tripRoundWith(CounterOn.MonthsByYear)
-           , tripRoundWith(CounterOn.WeeksByYear)
-           , tripRoundWith(CounterOn.Years))
+        Seq( tripRoundWith(CounterOn.HourByDayCounterOn)
+           , tripRoundWith(CounterOn.DayByMonthCounterOn)
+           , tripRoundWith(CounterOn.MonthByYearCounterOn)
+           , tripRoundWith(CounterOn.WeekByYearCounterOn)
+           , tripRoundWith(CounterOn.YearCounterOn))
           .map(tripRoundWith => tripRoundWith(fixture))
           .map(tripRoundWithAll => tripRoundWithAll(futureNow))
       ).map(toSucceeded)
@@ -91,11 +92,13 @@ class CounterRepositoryTest
 
   it should "round-trip getFrom/addToAll/getFrom adjustments for all counters" in {
 
-    case class Key(counterInstant: CounterInstant, adjustment: Adjustment)
+    case class Key(counterInstant: Counter, adjustment: Adjustment)
+
+    val allBuckets = Seq(HourByDayCounterOn, DayByMonthCounterOn, MonthByYearCounterOn, WeekByYearCounterOn, YearCounterOn)
 
     def loadAll(adjustments: Seq[Adjustment])(instant: Instant): Future[Map[Key,Long]] =
       Future.sequence(
-        CounterOn.All
+        allBuckets
           .flatMap(counterOn => adjustments.map(adjustment => counterOn -> adjustment)).toMap
           .map({ case (counterOn,adjustment) =>
             repository
@@ -110,7 +113,7 @@ class CounterRepositoryTest
         added  <- Future.sequence(fixture.map(adjustment => repository.addToAll(adjustment)))
         after  <- loadAll(fixture)(futureNow)
       } yield {
-        assert(added.size === CounterOn.All.size)
+        assert(added.size === allBuckets.size)
         assert(before.keys.map(key => after(key) === before(key) + key.adjustment.value).forall(isTrue))
       }
     }

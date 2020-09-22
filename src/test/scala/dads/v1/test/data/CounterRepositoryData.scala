@@ -21,21 +21,29 @@ trait CounterRepositoryData {
 
     import Instant._
     import ChronoUnit._
+    import CounterOn._
+    import CounterSpanOn._
 
-    val YearSpread    = 5
+    val InstantSpread = 5 * YEARS.getDuration.dividedBy(2).toMillis
     val MaxSpanLength = 500
 
-    implicit val arbitraryYearInstant: Arbitrary[Instant] =
+    implicit val arbitraryInstant: Arbitrary[Instant] =
       Arbitrary {
         val start = EPOCH.toEpochMilli
-        val end   = now.toEpochMilli + YearSpread * YEARS.getDuration.dividedBy(2).toMillis
+        val end   = now.toEpochMilli + InstantSpread
         choose(start, end).map(Instant.ofEpochMilli)
       }
 
     implicit val arbitraryCounterOn: Arbitrary[CounterOn] =
-      Arbitrary(oneOf(CounterOn.All))
+      Arbitrary(oneOf(
+        Seq( HourByDayCounterOn
+           , DayByMonthCounterOn
+           , MonthByYearCounterOn
+           , WeekByYearCounterOn
+//           , YearCounterOn
+           )))
 
-    implicit val arbitraryCounterInstant: Arbitrary[CounterInstant] =
+    implicit val arbitraryCounterInstant: Arbitrary[Counter] =
       Arbitrary {
         for {
           instant   <- arbitrary[Instant]
@@ -46,9 +54,9 @@ trait CounterRepositoryData {
     implicit val arbitraryCounterSpanOn: Arbitrary[CounterSpanOn] =
       Arbitrary {
         for {
-          length    <- choose(1, MaxSpanLength)
-          counterOn <- arbitrary[CounterOn]
-        } yield CounterSpanOn(counterOn)(length)
+          spanOf <- oneOf(HourByDaySpanOf, DayByMonthSpanOf, MonthByYearSpanOf, WeekByYearSpanOf, YearSpanOf)
+          size   <- choose(1, MaxSpanLength)
+        } yield spanOf(size)
       }
   }
 }
