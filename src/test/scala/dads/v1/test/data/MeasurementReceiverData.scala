@@ -64,8 +64,8 @@ trait MeasurementReceiverData {
       Arbitrary {
         for {
           sourceId          <- arbitrary[UUID].map(_.toString)
-          sequenceNr        =  0  // FIXME unused
-          unitOfMeasurement =  "" // FIXME unused
+          sequenceNr        =  0    // FIXME unused
+          unitOfMeasurement =  "kW" // FIXME unused
           size              <- choose(1, MaxMeasurementsPerMeasurementData)
           data              <- listOfN(size, arbitrary[MeasurementValues])
         } yield MeasurementData.of(sourceId, sequenceNr, unitOfMeasurement, data)

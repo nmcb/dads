@@ -4,31 +4,27 @@
 
 package dads.v1
 
-import akka.Done
-import akka.actor.CoordinatedShutdown
+import scala.util._
 
 import scala.concurrent._
+
+import akka.Done
 import akka.actor.typed._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl._
-import transport._
-import grpc._
 
-import scala.util.{Failure, Success}
+import transport._
+import grpc.v1._
 
 object MeasurementReceiver {
 
-  import v1.MeasurementDataCnf
-  import v1.MeasurementDataInd
-  import v1.MeasurementService
-
-  def defaultMeasurementService(implicit actorSystem: ActorSystem[_]): MeasurementService =
-    new MeasurementReceiver.DefaultMeasurementService(CounterRepository(DadsSettings()))
+  final val MaxMeasurementDataSize   = 5
+  final val MaxMeasurementValuesSize = 5
 
   class DefaultMeasurementService(repository: CounterRepository)(implicit system: ActorSystem[_])
     extends MeasurementService {
 
-    import Codec._
+    import transport.Codec._
 
     import CounterRepository._
     import CounterOn._
@@ -41,9 +37,9 @@ object MeasurementReceiver {
 
     private def processFor(counterOn: CounterOn)(measurement: Measurement): Future[Done] =
       for {
-        current    <- repository.getFrom(counterOn)(measurement.sourceId)(measurement.timestamp)
-        adjustment  = Adjustment(measurement.sourceId, measurement.timestamp, measurement.counterAdjustment - current)
-        _          <- repository.addTo(counterOn)(adjustment)
+        current <- repository.getFrom(counterOn)(measurement.sourceId)(measurement.timestamp)
+        adjustment = Adjustment(measurement.sourceId, measurement.timestamp, measurement.reading - current)
+        _ <- repository.addTo(counterOn)(adjustment)
       } yield Done
 
     private def processForAll(measurement: Measurement): Future[Done] =
@@ -52,22 +48,23 @@ object MeasurementReceiver {
         .map(_ => Done)
 
     def process(ind: MeasurementDataInd): Future[MeasurementDataCnf] =
-      // FIXME client protocol/interface, currently only returns a cnf if all adjustments succeed
-      Future
-        .sequence(ind.as[Update].measurements.map(measurement => processForAll(measurement)))
-        .map(_ => MeasurementDataCnf(ind.messageId))
+    // FIXME client protocol/interface, currently only returns a cnf if all adjustments succeed
+      ind.as[Update]
+        .fold(e => throw new RuntimeException(s"Boom: $e")
+          , u => Future
+            .sequence(u.measurements.map(measurement => processForAll(measurement)))
+            .map(_ => MeasurementDataCnf(ind.messageId)))
+
   }
 }
 
-class MeasurementReceiver(settings: DadsSettings.ReceiverSettings)(implicit system: ActorSystem[_]) {
-
-  import v1.MeasurementServiceHandler
+class MeasurementReceiver(settings: DadsSettings.ReceiverSettings, repository: CounterRepository)(implicit system: ActorSystem[_]) {
 
   //  TODO System inbound boundary:
   //
   //  - Input validation
   //  - Input codec
-  //  = Acknowledgement state (how principled do you dare to discuss this?)
+  //  - Acknowledgement state (how principled do you dare to discuss this?)
   //  - Drop inbound chain
   //  - Logging
   //  - Horizontal scaling: testing and non-functionals
@@ -75,6 +72,7 @@ class MeasurementReceiver(settings: DadsSettings.ReceiverSettings)(implicit syst
   //  - Production testing
 
   import akka.actor.typed.scaladsl.adapter._
+  import MeasurementReceiver._
 
   def run(): Future[Http.ServerBinding] = {
 
@@ -82,7 +80,7 @@ class MeasurementReceiver(settings: DadsSettings.ReceiverSettings)(implicit syst
       system.executionContext
 
     val service: HttpRequest => Future[HttpResponse] =
-      MeasurementServiceHandler(MeasurementReceiver.defaultMeasurementService)
+      MeasurementServiceHandler(new DefaultMeasurementService(repository))
 
     val futureServerBinding: Future[Http.ServerBinding] =
       Http()(system.toClassic)

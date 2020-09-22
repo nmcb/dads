@@ -27,6 +27,7 @@ object Dependencies {
        , "com.typesafe.akka"  %% "akka-persistence-cassandra" % akkaPersistenceCassandraVersion
        , "com.datastax.oss"   %  "java-driver-core"           % datastaxCassandraDriverVersion
        , "com.datastax.oss"   %  "java-driver-query-builder"  % datastaxCassandraDriverVersion
+       , "org.typelevel"      %% "cats-core"                  % catsCoreVersion
        )
 
   lazy val monitoringDeps: Seq[ModuleID] =

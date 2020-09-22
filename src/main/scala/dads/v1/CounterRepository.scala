@@ -125,7 +125,7 @@ object CounterRepository {
                        , value    : Long
                        )
 
-  case class Counter(  majorInstant    : Instant
+  case class Counter( majorInstant    : Instant
                     , minorInstant    : Instant
                     , majorChronoUnit : ChronoUnit
                     , minorChronoUnit : ChronoUnit

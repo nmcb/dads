@@ -18,7 +18,6 @@ import org.scalatest._
 import org.scalatest.concurrent._
 import org.scalatest.matchers.should._
 import org.scalatest.wordspec._
-
 import org.scalacheck._
 
 import akka.actor.testkit.typed.scaladsl._
@@ -44,17 +43,17 @@ class MeasurementReceiverTest
   val testKit: ActorTestKit =
     ActorTestKit(ConfigFactory.defaultApplication)
 
-  val settings: DadsSettings.ReceiverSettings =
-    DadsSettings().measurementReceiver
-
-  val futureHttpServerBinding: Future[Http.ServerBinding] =
-    new MeasurementReceiver(settings)(testKit.system).run()
-
-  val httpServerBinding: Http.ServerBinding =
-    futureHttpServerBinding.futureValue
+  val settings: DadsSettings =
+    DadsSettings()
 
   implicit val clientSystem: ActorSystem[_] =
     ActorSystem(Behaviors.empty, "MeasurementServiceClient")
+
+  val futureHttpServerBinding: Future[Http.ServerBinding] =
+    new MeasurementReceiver(settings.measurementReceiver, CounterRepository(settings))(testKit.system).run()
+
+  val httpServerBinding: Http.ServerBinding =
+    futureHttpServerBinding.futureValue
 
   override protected def afterAll(): Unit = {
     clientSystem.terminate()
@@ -64,17 +63,14 @@ class MeasurementReceiverTest
   val client: MeasurementServiceClient =
     MeasurementServiceClient(
       GrpcClientSettings
-        .connectToServiceAt(settings.host, settings.port)
+        .connectToServiceAt(settings.measurementReceiver.host, settings.measurementReceiver.port)
         .withTls(false)) // FIXME should not be used in production
 
-  // FIXME Use arbitrary indications
   "MeasurementReceiver" should {
-    "process a single measurement data indication" in {
+    "process a single measurement data indication" in { // TODO can we get forAll to work here ?
       val ind = arbitrary[MeasurementDataInd].sample.getOrElse(throw new RuntimeException("booms"))
       val task  = client.process(ind)
-      val reply = task.futureValue
-      println(reply)
-      reply should be (MeasurementDataCnf(ind.messageId))
+      task.futureValue should be (MeasurementDataCnf(ind.messageId))
     }
   }
 }
