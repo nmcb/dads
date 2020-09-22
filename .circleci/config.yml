@@ -1,0 +1,42 @@
+version: 2
+jobs:
+  test-build:
+    docker:
+      - image: circleci/openjdk:11-buster
+        environment:
+          SBT_VERSION: 1.3.10
+
+      - image: cassandra:3.11.8
+
+    steps:
+      - checkout
+      - run:
+          name: Wait for Cassandra
+          command: dockerize -wait tcp://localhost:9042 -timeout 1m
+      - run:
+          name: Cassandra setup
+          command: |
+            CASSANDRA_CONTAINER_PID=$(docker ps | grep cassandra | awk '{ print $1 }')
+            docker exec -it $CASSANDRA_CONTAINER_PID cqlsh -f src/main/resources/cassandra/initialise.dev.cql
+            docker exec -it $CASSANDRA_CONTAINER_PID cqlsh -f src/main/resources/cassandra/dads.v1.cql
+      - run:
+          name: Download SBT
+          command: |
+            sudo apt update && sudo apt install -y wget
+            sudo wget https://dl.bintray.com/sbt/debian/sbt-$SBT_VERSION.deb -O sbt-$SBT_VERSION.deb
+            sudo dpkg -i sbt-$SBT_VERSION.deb
+            sudo apt update && sudo apt install sbt
+      - run:
+          name: Test Suite
+          command: sbt test
+
+workflows:
+  version: 2
+  test-build:
+    jobs:
+      - build-and-test:
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /(stage|production)-.*/
