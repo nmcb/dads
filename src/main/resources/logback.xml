@@ -5,6 +5,10 @@
 
 <configuration>
 
+<!--    TODO suppress info's ?                  -->
+<!--    - akka.event.slf4j                      -->
+<!--    - com.datastax.oss.driver.internal.core -->
+
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg%n</pattern>
@@ -30,6 +34,7 @@
 
     <root level="DEBUG">
         <appender-ref ref="STDOUT"/>
-<!--        <appender-ref ref="FILE"/>-->
+<!--        FIXME production setting   -->
+<!--        <appender-ref ref="FILE"/> -->
     </root>
 </configuration>

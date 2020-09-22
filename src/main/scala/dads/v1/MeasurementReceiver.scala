@@ -37,9 +37,9 @@ object MeasurementReceiver {
 
     private def processFor(counterOn: CounterOn)(measurement: Measurement): Future[Done] =
       for {
-        current <- repository.getFrom(counterOn)(measurement.sourceId)(measurement.timestamp)
-        adjustment = Adjustment(measurement.sourceId, measurement.timestamp, measurement.reading - current)
-        _ <- repository.addTo(counterOn)(adjustment)
+        current    <- repository.getFrom(counterOn)(measurement.sourceId)(measurement.timestamp)
+        adjustment =  Adjustment(measurement.sourceId, measurement.timestamp, measurement.reading - current)
+        _          <- repository.addTo(counterOn)(adjustment)
       } yield Done
 
     private def processForAll(measurement: Measurement): Future[Done] =
@@ -47,14 +47,14 @@ object MeasurementReceiver {
         .sequence(AllCountersOn.map(counterOn => processFor(counterOn)(measurement)))
         .map(_ => Done)
 
-    def process(ind: MeasurementDataInd): Future[MeasurementDataCnf] =
+    def process(inbound: MeasurementDataInd): Future[MeasurementDataCnf] =
     // FIXME client protocol/interface, currently only returns a cnf if all adjustments succeed
-      ind.as[Update]
-        .fold(e => throw new RuntimeException(s"Boom: $e")
-          , u => Future
-            .sequence(u.measurements.map(measurement => processForAll(measurement)))
-            .map(_ => MeasurementDataCnf(ind.messageId)))
-
+      inbound
+        .as[Update]
+        .fold( errors => throw new RuntimeException(s"Boom: $errors")
+             , update => Future
+                           .sequence(update.measurements.map(measurement => processForAll(measurement)))
+                           .map(_ => MeasurementDataCnf(update.messageId.toString)))
   }
 }
 
@@ -62,10 +62,10 @@ class MeasurementReceiver(settings: DadsSettings.ReceiverSettings, repository: C
 
   //  TODO System inbound boundary:
   //
-  //  - Input validation
-  //  - Input codec
+  //  x Input validation
+  //  x Input codec
   //  - Acknowledgement state (how principled do you dare to discuss this?)
-  //  - Drop inbound chain
+  //  x Drop inbound chain
   //  - Logging
   //  - Horizontal scaling: testing and non-functionals
   //  - Round-trip testing
@@ -93,18 +93,14 @@ class MeasurementReceiver(settings: DadsSettings.ReceiverSettings, repository: C
     futureServerBinding
       .map( binding =>
         binding
-          .whenTerminationSignalIssued
-          .map(deadline => {
-            system.log.info(s"Stopping MeasurementReceiver at ${settings.host}:${settings.port} in ${deadline.time}")
-            binding.terminate(deadline.time).onComplete { // FIXME terminate seems to be called twice
-              case Success(termination) =>
-                system.log.info(s"MeasurementReceiver at ${settings.host}:${settings.port} terminated")
-              case Failure(exception) =>
-                system.log.info(s"MeasurementReceiver at ${settings.host}:${settings.port} failed to terminate")
-                system.log.error(s"Message: ${exception.getMessage}", exception)
-                system.log.info(s"MeasurementReceiver at ${settings.host}:${settings.port} killed")
-            }
-          }))
+          .whenTerminated
+          .onComplete {
+            case Success(_) =>
+              system.log.info(s"MeasurementReceiver at ${settings.host}:${settings.port} terminated")
+            case Failure(exception) =>
+              system.log.error(s"MeasurementReceiver at ${settings.host}:${settings.port} failed to terminate")
+              system.log.error(s"Message: ${exception.getMessage}", exception)
+          })
 
     system.log.info(s"MeasurementReceiver running at ${settings.host}:${settings.port}")
 
