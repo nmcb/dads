@@ -4,6 +4,7 @@
 
 package dads.v1
 
+import akka.Done
 import akka.actor.CoordinatedShutdown
 
 import scala.concurrent._
@@ -28,22 +29,33 @@ object MeasurementReceiver {
     extends MeasurementService {
 
     import Codec._
+
     import CounterRepository._
+    import CounterOn._
+
+    val AllCountersOn: Seq[CounterOn] =
+      Seq(HourByDayCounterOn, DayByMonthCounterOn, MonthByYearCounterOn, WeekByYearCounterOn, YearCounterOn)
 
     implicit val executionContext: ExecutionContext =
       system.executionContext
 
-    def process(ind: MeasurementDataInd): Future[MeasurementDataCnf] = {
-      val update = ind.as[Update]
+    private def processFor(counterOn: CounterOn)(measurement: Measurement): Future[Done] =
+      for {
+        current    <- repository.getFrom(counterOn)(measurement.sourceId)(measurement.timestamp)
+        adjustment  = Adjustment(measurement.sourceId, measurement.timestamp, measurement.counterAdjustment - current)
+        _          <- repository.addTo(counterOn)(adjustment)
+      } yield Done
 
+    private def processForAll(measurement: Measurement): Future[Done] =
+      Future
+        .sequence(AllCountersOn.map(counterOn => processFor(counterOn)(measurement)))
+        .map(_ => Done)
+
+    def process(ind: MeasurementDataInd): Future[MeasurementDataCnf] =
       // FIXME client protocol/interface, currently only returns a cnf if all adjustments succeed
-      Future.sequence(
-        update
-          .measurements
-          .map(measurement => Adjustment(measurement.sourceId, measurement.timestamp, measurement.counterAdjustment))
-          .map(adjustment  => repository.addToAll(adjustment)))
-        .map(_ => MeasurementDataCnf(update.messageId))
-    }
+      Future
+        .sequence(ind.as[Update].measurements.map(measurement => processForAll(measurement)))
+        .map(_ => MeasurementDataCnf(ind.messageId))
   }
 }
 

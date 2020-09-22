@@ -40,7 +40,7 @@ trait CounterRepositoryData {
            , DayByMonthCounterOn
            , MonthByYearCounterOn
            , WeekByYearCounterOn
-//           , YearCounterOn
+           , YearCounterOn
            )))
 
     implicit val arbitraryCounterInstant: Arbitrary[Counter] =

@@ -57,12 +57,6 @@ object CounterRepository {
           .get(system)
           .sessionFor(CassandraSessionSettings())
 
-      def addToAll(adjustment: Adjustment): Future[Done] =
-        Future.sequence(
-          Seq(HourByDayCounterOn, DayByMonthCounterOn, MonthByYearCounterOn, WeekByYearCounterOn, YearCounterOn)
-            .map(counterOn => addTo(counterOn)(adjustment))
-        ).map(toDone)
-
       def addTo(counterOn: CounterOn)(adjustment: Adjustment): Future[Done] = {
         val counter = counterOn(adjustment.instant)
 
@@ -267,8 +261,6 @@ import CounterRepository._
 trait CounterRepository {
 
   def addTo(counterOn: CounterOn)(adjustment: Adjustment): Future[Done]
-
-  def addToAll(adjustment: Adjustment): Future[Done]
 
   def getFrom(counter: CounterOn)(sourceId: SourceId)(instant: Instant): Future[Long]
 

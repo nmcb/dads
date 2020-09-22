@@ -19,16 +19,23 @@ import org.scalatest.concurrent._
 import org.scalatest.matchers.should._
 import org.scalatest.wordspec._
 
+import org.scalacheck._
+
 import akka.actor.testkit.typed.scaladsl._
 
+import data._
 
 class MeasurementReceiverTest
   extends AnyWordSpec
     with BeforeAndAfterAll
     with Matchers
     with ScalaFutures
+    with MeasurementReceiverData
     with RealWorld
 {
+  import Arbitrary._
+  import ArbitraryRequests._
+
   import transport.grpc._
   import v1.MeasurementDataCnf
   import v1.MeasurementDataInd
@@ -54,17 +61,20 @@ class MeasurementReceiverTest
     httpServerBinding.terminate(Main.RealTimeServiceLevelAgreement)
   }
 
-
   val client: MeasurementServiceClient =
     MeasurementServiceClient(
       GrpcClientSettings
         .connectToServiceAt(settings.host, settings.port)
         .withTls(false)) // FIXME should not be used in production
 
+  // FIXME Use arbitrary indications
   "MeasurementReceiver" should {
     "process a single measurement data indication" in {
-      val reply = client.process(MeasurementDataInd())
-      reply.futureValue should be (MeasurementDataCnf.defaultInstance)
+      val ind = arbitrary[MeasurementDataInd].sample.getOrElse(throw new RuntimeException("booms"))
+      val task  = client.process(ind)
+      val reply = task.futureValue
+      println(reply)
+      reply should be (MeasurementDataCnf(ind.messageId))
     }
   }
 }

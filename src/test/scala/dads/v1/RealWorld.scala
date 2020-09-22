@@ -28,7 +28,7 @@ trait RealWorld extends PatienceConfiguration {
     now.plus(RealTimeServiceLevelAgreement.toJava).`with`(instantUncertaintyAdjusterMillis)
 
   override implicit val patienceConfig: PatienceConfig =
-    PatienceConfig(RealTimeServiceLevelAgreement.toSpan, InstantUncertaintyMillis.toSpan)
+    PatienceConfig(RealTimeServiceLevelAgreement.toSpan, RealTimeServiceLevelAgreement.div(10).toSpan)
 
   def InstantUncertaintyMillis: FiniteDuration =
     10.millis

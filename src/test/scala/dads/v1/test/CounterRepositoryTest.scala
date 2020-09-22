@@ -31,7 +31,6 @@ class CounterRepositoryTest
     with RealWorld {
 
   import CounterRepository._
-  import CounterOn._
 
   implicit val system: ActorSystem =
     ActorSystem("CounterRepositoryTestSystem")
@@ -43,14 +42,13 @@ class CounterRepositoryTest
     DadsSettings()
 
   // FIXME Use arbitrary adjustments
-  val fixture: Seq[Adjustment] = {
+  val fixture: Seq[Adjustment] =
     List( Adjustment(UUID.randomUUID, now.spread, 666L)
         , Adjustment(UUID.randomUUID, now.spread, 667L)
         , Adjustment(UUID.randomUUID, now.spread, 668L)
         , Adjustment(UUID.randomUUID, now.spread, 669L)
         , Adjustment(UUID.randomUUID, now.spread, 670L)
         )
-  }
 
   def withAdjustments[A](adjustments: Seq[Adjustment])(f: Adjustment => Future[A]): Future[Seq[A]] =
     Future.sequence(adjustments.map(f))
@@ -89,37 +87,6 @@ class CounterRepositoryTest
       ).map(toSucceeded)
     }
   }
-
-  it should "round-trip getFrom/addToAll/getFrom adjustments for all counters" in {
-
-    case class Key(counterInstant: Counter, adjustment: Adjustment)
-
-    val allBuckets = Seq(HourByDayCounterOn, DayByMonthCounterOn, MonthByYearCounterOn, WeekByYearCounterOn, YearCounterOn)
-
-    def loadAll(adjustments: Seq[Adjustment])(instant: Instant): Future[Map[Key,Long]] =
-      Future.sequence(
-        allBuckets
-          .flatMap(counterOn => adjustments.map(adjustment => counterOn -> adjustment)).toMap
-          .map({ case (counterOn,adjustment) =>
-            repository
-              .getFrom(counterOn)(adjustment.sourceId)(instant)
-              .map(counter => Key(counterOn(adjustment.instant),adjustment) -> counter)
-          }).toSeq
-      ).map(_.toMap)
-
-    eventually {
-      for {
-        before <- loadAll(fixture)(now)
-        added  <- Future.sequence(fixture.map(adjustment => repository.addToAll(adjustment)))
-        after  <- loadAll(fixture)(futureNow)
-      } yield {
-        assert(added.size === allBuckets.size)
-        assert(before.keys.map(key => after(key) === before(key) + key.adjustment.value).forall(isTrue))
-      }
-    }
-  }
-
-  // FIXME add getSpan tests
 
   // UTILS
 
