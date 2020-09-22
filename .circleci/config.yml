@@ -32,9 +32,9 @@ jobs:
 
 workflows:
   version: 2
-  test-build:
+  build-and-test:
     jobs:
-      - build-and-test:
+      - test-build:
           filters:
             branches:
               only: /.*/
