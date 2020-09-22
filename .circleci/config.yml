@@ -20,16 +20,16 @@ jobs:
       - run:
           name: Cassandra setup
           command: |
-            sudo apt install -y python-pip && pip install awscli
-            cqlsh -f src/main/resources/cassandra/initialise.dev.cql
-            cqlsh -f src/main/resources/cassandra/dads.v1.cql
+            sudo apt update && sudo apt install -y python-pip && pip install cqlsh
+            cqlsh -f src/main/resources/cassandra/initialise.dev.cql --cqlversion="3.4.4"
+            cqlsh -f src/main/resources/cassandra/dads.v1.cql --cqlversion="3.4.4"
       - run:
           name: Download SBT
           command: |
-            sudo apt update && sudo apt install -y wget
+            sudo apt install -y wget
             sudo wget https://dl.bintray.com/sbt/debian/sbt-$SBT_VERSION.deb -O sbt-$SBT_VERSION.deb
             sudo dpkg -i sbt-$SBT_VERSION.deb
-            sudo apt update && sudo apt install sbt
+            sudo apt update && sudo apt install openjdk-11-jdk sbt
       - run:
           name: Test Suite
           command: sbt test
