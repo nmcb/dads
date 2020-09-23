@@ -9,6 +9,6 @@ package object v1 {
   type MessageId = java.util.UUID
   type SourceId  = java.util.UUID
 
-  // Todo squants
+  // TODO squants
   type NaturalUnit = String
 }

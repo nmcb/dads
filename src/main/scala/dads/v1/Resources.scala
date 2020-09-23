@@ -21,8 +21,8 @@ object Resources {
     } catch {
       case NonFatal(_) => throw new FileNotFoundException(resource)
     } finally {
-      str.close()
       src.close()
+      str.close()
     }
   }
 }

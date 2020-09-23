@@ -11,8 +11,8 @@ case class Update( messageId    : MessageId
                  , measurements : Seq[Measurement]
                  ) extends ProtoBuffed
 
-case class Measurement(sourceId    : SourceId
-                       , timestamp : Instant
-                       , reading   : Long
-                       , unit      : NaturalUnit
+case class Measurement( sourceId  : SourceId
+                      , timestamp : Instant
+                      , reading   : Long
+                      , unit      : NaturalUnit
                       ) extends ProtoBuffed

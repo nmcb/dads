@@ -63,9 +63,10 @@ class CounterRepositoryTest
 
   behavior of "CounterRepository"
 
-  it should "round-trip getFrom/addTo/getFrom should be able to update all counters" in {
+  it should "update all counters in a getFrom/addTo/getFrom round-trip" in {
 
-    def tripRoundWith[A](counterOn: CounterOn): Seq[Adjustment] => Instant => Future[Seq[Assertion]] =
+    def tripRoundWith[A](counterOn: CounterOn): Seq[Adjustment] => Instant => Future[Seq[Assertion]] = {
+      // TODO forAll adjustment and instant testing ?
       adjustments => instant =>
         withAdjustments(adjustments) { adjustment =>
           for {
@@ -74,6 +75,7 @@ class CounterRepositoryTest
             after   <- repository.getFrom(counterOn)(adjustment.sourceId)(instant)
           } yield assert(after === before + adjustment.value)
         }
+    }
 
     eventually {
       Future.sequence(

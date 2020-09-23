@@ -18,8 +18,8 @@ import grpc.v1._
 
 object MeasurementReceiver {
 
-  final val MaxMeasurementDataSize   = 5
-  final val MaxMeasurementValuesSize = 5
+  final val MaxSourceIdsPerMessage          = 5
+  final val MaxMeasurementValuesPerSourceId = 5
 
   class DefaultMeasurementService(repository: CounterRepository)(implicit system: ActorSystem[_])
     extends MeasurementService {
@@ -60,7 +60,7 @@ object MeasurementReceiver {
 
 class MeasurementReceiver(settings: DadsSettings.ReceiverSettings, repository: CounterRepository)(implicit system: ActorSystem[_]) {
 
-  //  TODO System inbound boundary:
+  //  TODO system inbound boundary:
   //
   //  x Input validation
   //  x Input codec
@@ -79,12 +79,12 @@ class MeasurementReceiver(settings: DadsSettings.ReceiverSettings, repository: C
     implicit val executionContext: ExecutionContext =
       system.executionContext
 
-    val service: HttpRequest => Future[HttpResponse] =
+    val handler: HttpRequest => Future[HttpResponse] =
       MeasurementServiceHandler(new DefaultMeasurementService(repository))
 
     val futureServerBinding: Future[Http.ServerBinding] =
       Http()(system.toClassic)
-        .bindAndHandleAsync( handler           = service
+        .bindAndHandleAsync( handler           = handler
                            , interface         = settings.host
                            , port              = settings.port
                            , connectionContext = HttpConnectionContext()

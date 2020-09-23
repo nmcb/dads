@@ -264,5 +264,6 @@ trait CounterRepository {
 
   def getFrom(counter: CounterOn)(sourceId: SourceId)(instant: Instant): Future[Long]
 
+  // TODO spread an adjustment across a span ?
   def getFrom(counters: CounterSpanOn)(sourceId: SourceId)(instant: Instant): Future[Seq[Long]]
 }

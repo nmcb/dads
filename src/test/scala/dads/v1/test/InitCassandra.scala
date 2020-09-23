@@ -15,6 +15,7 @@ import com.typesafe.config._
 import scala.concurrent._
 import scala.util._
 
+// TODO we need programmatic initialisation of cassandra
 object InitCassandra {
 
   val scripts: Seq[String] =

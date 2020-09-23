@@ -21,7 +21,7 @@ object Main {
 
     implicit val system: ActorSystem[Nothing] =
       ActorSystem[Nothing]( Behaviors.empty
-                          , "MainSystem"
+                          , "DadsMainActorSystem"
                           , ConfigFactory.defaultApplication
                           )
 

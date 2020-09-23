@@ -34,7 +34,7 @@ trait RealWorld extends PatienceConfiguration {
     10.millis
 
   def instantUncertaintyAdjusterMillis: TemporalAdjuster =
-    temporal => temporal.plus(Random.nextLong(10), MILLIS)
+    temporal => temporal.plus(Random.nextLong(10) / 2, MILLIS)
 
   trait Uncertainty[A] {
     def spread(a: A): A
