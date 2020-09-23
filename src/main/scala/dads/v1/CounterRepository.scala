@@ -23,7 +23,6 @@ object CounterRepository {
   import temporal._
 
   import QueryBuilder._
-  import CounterOn._
   import ChronoUnit._
   import TemporalAdjusters._
 
@@ -85,11 +84,11 @@ object CounterRepository {
           .map(toCounter)
       }
 
-      override def getFrom(counterSpanOn: CounterSpanOn)(sourceId: SourceId)(instant: Instant): Future[Seq[Long]] = {
+      override def getFrom(spanOn: CounterSpanOn)(sourceId: SourceId)(instant: Instant): Future[Seq[Long]] = {
 
         import scala.jdk.CollectionConverters._
 
-        val counters = counterSpanOn(instant)
+        val counters = spanOn(instant)
 
         val minorInstants: java.util.List[Term] =
           counters.map(_.majorInstant.toEpochMilli).map(literal).asInstanceOf[Seq[Term]].asJava
@@ -97,7 +96,7 @@ object CounterRepository {
         val majorInstants: java.util.List[Term] =
           counters.map(_.minorInstant.toEpochMilli).map(literal).asInstanceOf[Seq[Term]].asJava
 
-        selectFrom(settings.counterKeyspace, counterSpanOn.bucket.tableName)
+        selectFrom(settings.counterKeyspace, spanOn.bucket.tableName)
           .column(CounterValueColumn)
           .column(SourceIdColumn)
           .column(MajorInstantIdColumn)
@@ -262,8 +261,7 @@ trait CounterRepository {
 
   def addTo(counterOn: CounterOn)(adjustment: Adjustment): Future[Done]
 
-  def getFrom(counter: CounterOn)(sourceId: SourceId)(instant: Instant): Future[Long]
+  def getFrom(counterOn: CounterOn)(sourceId: SourceId)(instant: Instant): Future[Long]
 
-  // TODO spread an adjustment across a span ?
-  def getFrom(counters: CounterSpanOn)(sourceId: SourceId)(instant: Instant): Future[Seq[Long]]
+  def getFrom(spanOn: CounterSpanOn)(sourceId: SourceId)(instant: Instant): Future[Seq[Long]]
 }

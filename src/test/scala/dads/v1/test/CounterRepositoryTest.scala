@@ -19,6 +19,8 @@ import org.scalatest.concurrent._
 import org.scalatest.flatspec._
 import org.scalatest.matchers.should._
 
+import org.scalacheck._
+
 import data._
 
 class CounterRepositoryTest

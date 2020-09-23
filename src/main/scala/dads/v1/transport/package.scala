@@ -16,5 +16,5 @@ package object transport {
   type Val[A] = ValidatedNec[InboundError,A]
 
   def tuple2Identity[A,B]: (A,B) => (A,B) =
-  { case (a,b) => (a,b) }
+    { case (a,b) => (a,b) }
 }

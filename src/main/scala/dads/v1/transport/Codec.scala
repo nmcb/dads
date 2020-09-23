@@ -14,8 +14,7 @@ import transport.grpc.v1._
 
 import scala.util._
 
-
-// TODO decouple validate/decode
+// TODO decouple validate/decode ?
 trait Codec[M <: scalapb.GeneratedMessage, A] {
   def decode(msg: M): Val[A]
 }
@@ -26,7 +25,7 @@ object Codec {
 
   case object NoMessageIdError    extends InboundError("No valid (UUID) messageId")
   case object NoSourceIdError     extends InboundError("No valid (UUID) sourceId")
-  case object NoUnitError         extends InboundError("No valid unit of measurement")
+  case object NoUnitError         extends InboundError("No valid (kW) unit of measurement")
   case object NoValidValueError   extends InboundError("No valid (decimal) value")
   case object NoValidInstantError extends InboundError("No valid instant")
   case object NoSourcesError      extends InboundError("No measurements")
