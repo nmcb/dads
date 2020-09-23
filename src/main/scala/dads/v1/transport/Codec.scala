@@ -8,7 +8,6 @@ package transport
 import java.time._
 import java.util.UUID
 
-import cats.data._
 import cats.implicits._
 
 import transport.grpc.v1._
@@ -71,10 +70,10 @@ object Codec {
       ( validateInstant(mv.timestamp)
       , validateMultiTypeValue(mv.value)
       ).mapN(tuple2Identity)
-    ).sequence[Val[*],(Instant,Long)]
+    ).sequence[Val,(Instant,Long)]
 
   def validateMeasurementData(measurementData: MeasurementData): Val[Seq[Measurement]] = {
-    def measurementFromValues(sourceId: SourceId, unit: String)(values: Seq[(Instant, Long)]): Seq[Measurement] =
+    def rollout(sourceId: SourceId, unit: String)(values: Seq[(Instant, Long)]): Seq[Measurement] =
       values.map { case (instant, reading) =>
         Measurement(sourceId, instant, reading, unit)
       }
@@ -83,7 +82,7 @@ object Codec {
     , validateUnit(measurementData.unit)
     , validateMeasurementValuesList(measurementData.data.toList)
     ).mapN { case (sourceId, unit, values) =>
-        measurementFromValues(sourceId, unit)(values)
+        rollout(sourceId, unit)(values)
     }
   }
 
