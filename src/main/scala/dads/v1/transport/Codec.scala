@@ -15,6 +15,12 @@ import transport.grpc.v1._
 
 import scala.util._
 
+
+// TODO decouple validate/decode
+trait Codec[M <: scalapb.GeneratedMessage, A] {
+  def decode(msg: M): Val[A]
+}
+
 object Codec {
 
   import MeasurementReceiver._
@@ -29,37 +35,34 @@ object Codec {
   case object NoValuesError       extends InboundError("No measurement values")
   case object TooManyValuesError  extends InboundError(s"Too many (>$MaxMeasurementValuesPerSourceId) measurement values")
 
-  implicit class DecoderOps[M <: scalapb.GeneratedMessage](msg: M) {
+  implicit class CodecOps[M <: scalapb.GeneratedMessage](msg: M) {
 
-    def as[A: Decoder[M,*]]: ValidatedNec[InboundError,A] =
-      implicitly[Decoder[M, A]].decode(msg)
+    def as[A : Codec[M,*]]: Val[A] =
+      implicitly[Codec[M,A]].decode(msg)
   }
 
-  def validateMessageId(messageId: String): ValidatedNec[InboundError,UUID] =
+  def validateMessageId(messageId: String): Val[UUID] =
     Try(UUID.fromString(messageId)).fold(_ => NoMessageIdError.invalidNec, _.validNec)
 
-  def validateSourceId(sourceId: String): ValidatedNec[InboundError,UUID] =
+  def validateSourceId(sourceId: String): Val[UUID] =
     Try(UUID.fromString(sourceId)).fold(_ => NoSourceIdError.invalidNec, _.validNec)
 
-  def validateUnit(unit: String): ValidatedNec[InboundError,String] = {
+  def validateUnit(unit: String): Val[String] = {
     // TODO squants
     if (unit != "kW") NoUnitError.invalidNec else unit.validNec
   }
 
-  def validateSeqNr(seqNr: Int): ValidatedNec[InboundError,Int] =
+  def validateSeqNr(seqNr: Int): Val[Int] =
     seqNr.validNec // Ignored
 
-  def validateInstant(instant: Long): ValidatedNec[InboundError,Instant] =
+  def validateInstant(instant: Long): Val[Instant] =
     Try(Instant.ofEpochMilli(instant)).fold(_ => NoValidInstantError.invalidNec, _.validNec)
 
-  def validateMultiTypeValue(multiType: Option[MultiType]): ValidatedNec[InboundError,Long] =
+  def validateMultiTypeValue(multiType: Option[MultiType]): Val[Long] =
     if (multiType.isEmpty || !multiType.get.value.isDecimal) NoValidValueError.invalidNec
     else Try(multiType.get.value.decimal.map(_.toLong).get).fold(_ => NoValidValueError.invalidNec, _.validNec)
 
-  def validateMeasurementValuesList(values: List[MeasurementValues]): ValidatedNec[InboundError,Seq[(Instant,Long)]] = {
-    val id: (Instant,Long) => (Instant,Long) =
-      { case (instant, reading) => (instant, reading) }
-
+  def validateMeasurementValuesList(values: List[MeasurementValues]): Val[Seq[(Instant,Long)]] =
     if (values.isEmpty)
       NoValuesError.invalidNec
     else if (values.size > MaxMeasurementValuesPerSourceId)
@@ -67,26 +70,29 @@ object Codec {
     else values.map( mv =>
       ( validateInstant(mv.timestamp)
       , validateMultiTypeValue(mv.value)
-      ).mapN(id)
-    ).sequence[ValidatedNec[InboundError,*],(Instant,Long)]
-  }
+      ).mapN(tuple2Identity)
+    ).sequence[Val[*],(Instant,Long)]
 
-  def validateMeasurementData(measurementData: MeasurementData): ValidatedNec[InboundError,Seq[Measurement]] =
+  def validateMeasurementData(measurementData: MeasurementData): Val[Seq[Measurement]] = {
+    def measurementFromValues(sourceId: SourceId, unit: String)(values: Seq[(Instant, Long)]): Seq[Measurement] =
+      values.map { case (instant, reading) =>
+        Measurement(sourceId, instant, reading, unit)
+      }
+
     ( validateSourceId(measurementData.sourceId)
     , validateUnit(measurementData.unit)
     , validateMeasurementValuesList(measurementData.data.toList)
-    ).mapN({ case (sourceId, unit, values) =>
-        values.map({ case (instant, reading) =>
-          Measurement(sourceId, instant, reading, unit)
-        })
-    })
+    ).mapN { case (sourceId, unit, values) =>
+        measurementFromValues(sourceId, unit)(values)
+    }
+  }
 
-  def validateMeasurementDataSeq(data: List[MeasurementData]): ValidatedNec[InboundError,Seq[Measurement]] =
+  def validateMeasurementDataSeq(data: List[MeasurementData]): Val[Seq[Measurement]] =
     if      (data.isEmpty)                        NoSourcesError.invalidNec
     else if (data.size > MaxSourceIdsPerMessage)  TooManySourcesError.invalidNec
     else data.map(md => validateMeasurementData(md)).sequence.map(_.flatten)
 
-  implicit val measurementIndDecoder: Decoder[MeasurementDataInd, Update] =
+  implicit val measurementIndCodec: Codec[MeasurementDataInd, Update] =
     indication =>
       ( validateMessageId(indication.messageId)
       , validateMeasurementDataSeq(indication.measurements.toList)
