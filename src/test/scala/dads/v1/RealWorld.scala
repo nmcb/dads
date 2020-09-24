@@ -57,7 +57,6 @@ trait RealWorld extends PatienceConfiguration {
 
     def toScalaDuration: FiniteDuration =
       convertSpanToDuration(span)
-
   }
 
   implicit class ScalaFiniteDurationConverter(duration: FiniteDuration) {
@@ -67,6 +66,5 @@ trait RealWorld extends PatienceConfiguration {
 
     def toSpan: org.scalatest.time.Span =
       convertDurationToSpan(duration)
-
   }
 }

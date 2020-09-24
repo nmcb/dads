@@ -6,7 +6,6 @@ package dads.v1
 package test
 
 import java.time._
-import java.util.UUID
 
 import scala.concurrent._
 
@@ -32,7 +31,11 @@ class CounterRepositoryTest
     with Eventually
     with RealWorld {
 
+  import Arbitrary._
   import CounterRepository._
+  import ArbitraryCounters._
+
+  final val FixtureSize = 100
 
   implicit val system: ActorSystem =
     ActorSystem("CounterRepositoryTestSystem")
@@ -43,14 +46,8 @@ class CounterRepositoryTest
   val settings: DadsSettings =
     DadsSettings()
 
-  // FIXME Use arbitrary adjustments
   val fixture: Seq[Adjustment] =
-    List( Adjustment(UUID.randomUUID, now.spread, 666L)
-        , Adjustment(UUID.randomUUID, now.spread, 667L)
-        , Adjustment(UUID.randomUUID, now.spread, 668L)
-        , Adjustment(UUID.randomUUID, now.spread, 669L)
-        , Adjustment(UUID.randomUUID, now.spread, 670L)
-        )
+    Seq.fill(FixtureSize)(arbitrary[Adjustment].sample.get)
 
   def withAdjustments[A](adjustments: Seq[Adjustment])(f: Adjustment => Future[A]): Future[Seq[A]] =
     Future.sequence(adjustments.map(f))
@@ -65,13 +62,15 @@ class CounterRepositoryTest
 
   behavior of "CounterRepository"
 
-  it should "update all counters in a getFrom/addTo/getFrom round-trip" in {
+  it should "update all counters in a baselined addTo/getFrom/addTo/getFrom round-trip" in {
 
     def tripRoundWith[A](counterOn: CounterOn): Seq[Adjustment] => Instant => Future[Seq[Assertion]] = {
-      // TODO forAll adjustment and instant testing ?
+      // TODO forAll adjustment and instant ?
       adjustments => instant =>
         withAdjustments(adjustments) { adjustment =>
+          val baseline: Adjustment = adjustment.copy(value = arbitrary[Long].sample.get)
           for {
+            _       <- repository.addTo(counterOn)(baseline)
             before  <- repository.getFrom(counterOn)(adjustment.sourceId)(instant)
             _       <- repository.addTo(counterOn)(adjustment)
             after   <- repository.getFrom(counterOn)(adjustment.sourceId)(instant)

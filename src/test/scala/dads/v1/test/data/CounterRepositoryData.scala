@@ -11,7 +11,7 @@ import java.time.temporal._
 
 import org.scalacheck._
 
-trait CounterRepositoryData {
+trait CounterRepositoryData { this: RealWorld =>
 
   import Arbitrary._
   import Gen._
@@ -19,17 +19,18 @@ trait CounterRepositoryData {
 
   object ArbitraryCounters {
 
-    import Instant._
     import ChronoUnit._
     import CounterOn._
     import CounterSpanOn._
 
-    val InstantSpread = 5 * YEARS.getDuration.dividedBy(2).toMillis
-    val MaxSpanLength = 500
+    val InstantSpread      = 5 * YEARS.getDuration.dividedBy(2).toMillis
+    val MaxSpanLength      = 500
+    val MinAdjustmentValue = -100L
+    val MaxAdjustmentValue = 1000L
 
     implicit val arbitraryInstant: Arbitrary[Instant] =
       Arbitrary {
-        val start = EPOCH.toEpochMilli
+        val start = now.toEpochMilli - InstantSpread
         val end   = now.toEpochMilli + InstantSpread
         choose(start, end).map(Instant.ofEpochMilli)
       }
@@ -57,6 +58,14 @@ trait CounterRepositoryData {
           spanOf <- oneOf(HourByDaySpanOf, DayByMonthSpanOf, MonthByYearSpanOf, WeekByYearSpanOf, YearSpanOf)
           size   <- choose(1, MaxSpanLength)
         } yield spanOf(size)
+      }
+
+    implicit val arbitraryAdjustment: Arbitrary[Adjustment] =
+      Arbitrary {
+        for {
+          sourceId <- arbitrary[SourceId]
+          value    <- choose(MinAdjustmentValue, MaxAdjustmentValue)
+        } yield Adjustment(sourceId, now.spread, value)
       }
   }
 }
