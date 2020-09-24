@@ -2,10 +2,8 @@
  * This is free and unencumbered software released into the public domain.
  */
 
-use aurum;
-
 -- Cumulative tables
-create table if not exists day (
+create table if not exists "aurum"."day" (
     source  uuid,
     rowtime timestamp, -- day
     coltime timestamp, -- hour
@@ -13,7 +11,7 @@ create table if not exists day (
     primary key ((source, rowtime), coltime)
 );
 
-create table if not exists month (
+create table if not exists "aurum"."month" (
     source  uuid,
     rowtime timestamp, -- month
     coltime timestamp, -- day
@@ -21,7 +19,7 @@ create table if not exists month (
     primary key ((source, rowtime), coltime)
 );
 
-create table if not exists year_week (
+create table if not exists "aurum"."year_week" (
     source  uuid,
     rowtime timestamp,   -- year
     coltime timestamp,   -- (start of) week
@@ -29,7 +27,7 @@ create table if not exists year_week (
     primary key ((source, rowtime), coltime)
 );
 
-create table if not exists year (
+create table if not exists "aurum"."year" (
     source  uuid,
     rowtime timestamp, -- year
     coltime timestamp, -- month
@@ -37,7 +35,7 @@ create table if not exists year (
     primary key ((source, rowtime), coltime)
 );
 
-create table if not exists forever (
+create table if not exists "aurum"."forever" (
     source  uuid,
     rowtime timestamp, -- 1 jan 1970, epoch time 0
     coltime timestamp, -- year
@@ -45,10 +43,8 @@ create table if not exists forever (
     primary key ((source, rowtime), coltime)
 );
 
-use dads_v1;
-
 -- Realtime tables
-create table realtime_decimal (
+create table "dads_v1"."realtime_decimal" (
     source uuid,
     time   timestamp,
     value  decimal,
@@ -64,7 +60,7 @@ create table realtime_decimal (
 --     source        uuid,
 --     time          timestamp,
 --     value         varchar,
---     primary key (source, time)
+--     primary key (source, time)s
 -- ) with default_time_to_live = 3600;
 
 -- Possible table to facilitate state recovery and/or store the last known values.
