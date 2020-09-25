@@ -1,6 +1,22 @@
 ## DADS
 
-Provides adjustment and counter storage.
+Provides bucketed counter storage.
+
+```
+SourceId       : java.util.UUID        -- Type 4
+Instant        : scala.Long            -- since Unix EPOCH in millis
+ChronoUnit     : java.time.ChronoUnit  -- Hours, Days, Months, Years
+CassandraTable : String                -- Cassandra storage identifier
+Value          : scala.Long            -- An (under normal operation positive) integer
+
+Bucket         : ChronoUnit -> ChronoUnit -> CassandraTable
+CounterOn      : Instant -> Bucket
+Adjustment     : UUID -> Instant -> Value
+
+CounterAddTo   : CounterOn -> Adjustment -> Done
+CounterGetFrom : CounterOn -> SourceId   -> Instant -> Value
+```
+
 
 ### Publish and Deploy in Development
 
