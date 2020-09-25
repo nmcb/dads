@@ -2,7 +2,13 @@
  * This is free and unencumbered software released into the public domain.
  */
 
--- Cumulative tables
+
+
+-- Counter tables
+-- TODO Storage model
+-- - bucket ~= table disallows dynamic dispatch
+-- - missing green/blue and prd/dev data markers (options-bits?)
+
 create table if not exists "aurum"."day" (
     source  uuid,
     rowtime timestamp, -- day
