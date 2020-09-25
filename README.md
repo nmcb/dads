@@ -11,7 +11,7 @@ Value          : scala.Long            -- An (under normal operation positive) i
 
 Bucket         : ChronoUnit -> ChronoUnit -> CassandraTable
 CounterOn      : Instant -> Bucket
-Adjustment     : UUID -> Instant -> Value
+Adjustment     : SourceId -> Instant -> Value
 
 CounterAddTo   : CounterOn -> Adjustment -> Done
 CounterGetFrom : CounterOn -> SourceId   -> Instant -> Value
