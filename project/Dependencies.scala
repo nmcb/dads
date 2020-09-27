@@ -9,7 +9,7 @@ object Dependencies {
 
   // VERSIONS
 
-  val akkaVersion                     = "2.6.8"
+  val akkaVersion                     = "2.6.9"
   val akkaAlpakkaVersion              = "2.0.1"
   val logbackVersion                  = "1.2.3"
   val catsCoreVersion                 = "2.1.1"

@@ -7,14 +7,14 @@ SourceId       : java.util.UUID        -- Type 5
 Instant        : java.time.Instant     -- scala.Long since Unix EPOCH in millis
 ChronoUnit     : java.time.ChronoUnit  -- Hours, Days, Months, Years
 CassandraTable : String                -- Cassandra storage identifier
-Value          : scala.Long            -- An (under normal operation positive) integer
+Value          : scala.Long            -- An (under normal operations positive) integer
 
-Bucket         : ChronoUnit -> ChronoUnit -> CassandraTable
-CounterOn      : Instant -> Bucket
-Adjustment     : SourceId -> Instant -> Value
+Bucket         : ChronoUnit -> ChronoUnit -> CassandraTable -- Counter identifier indirection
+CounterOn      : Instant    -> Bucket                       -- Counter identifier indirected
+Adjustment     : SourceId   -> Instant    -> Value
 
-CounterAddTo   : CounterOn -> Adjustment -> Done
-CounterGetFrom : CounterOn -> SourceId   -> Instant -> Value
+CounterAddTo   : CounterOn -> Adjustment -> Done               -- Counter mutator verb 
+CounterGetFrom : CounterOn -> SourceId   -> Instant -> Value   -- Counter accessor verb
 ```
 
 
