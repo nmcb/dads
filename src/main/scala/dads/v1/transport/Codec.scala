@@ -6,7 +6,6 @@ package dads.v1
 package transport
 
 import java.time._
-import java.util.UUID
 
 import cats.implicits._
 
@@ -39,11 +38,11 @@ object Codec {
       implicitly[Codec[M,A]].decode(msg)
   }
 
-  def validateMessageId(messageId: String): Val[UUID] =
-    Try(UUID.fromString(messageId)).fold(_ => NoMessageIdError.invalidNec, _.validNec)
+  def validateMessageId(messageId: String): Val[MessageId] =
+    Try(MessageId.fromString(messageId)).fold(_ => NoMessageIdError.invalidNec, _.validNec)
 
-  def validateSourceId(sourceId: String): Val[UUID] =
-    Try(UUID.fromString(sourceId)).fold(_ => NoSourceIdError.invalidNec, _.validNec)
+  def validateSourceId(sourceId: String): Val[SourceId] =
+    Try(SourceId.fromName(sourceId)).fold(_ => NoSourceIdError.invalidNec, _.validNec)
 
   def validateUnit(unit: String): Val[String] = {
     // TODO squants

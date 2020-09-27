@@ -3,7 +3,7 @@
 Provides bucketed counter storage.
 
 ```
-SourceId       : java.util.UUID        -- Type 4
+SourceId       : java.util.UUID        -- Type 5
 Instant        : java.time.Instant     -- scala.Long since Unix EPOCH in millis
 ChronoUnit     : java.time.ChronoUnit  -- Hours, Days, Months, Years
 CassandraTable : String                -- Cassandra storage identifier
