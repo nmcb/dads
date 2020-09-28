@@ -29,8 +29,8 @@ trait MeasurementReceiverData {
     val MaxMeasurementsPerMeasurementData = 5 // 1024
     val MaxMeasurementDataPerIndication   = 5 // 1024
 
-    val MinDecimalValueMeasurement = -1000
-    val MaxDecimalValueMeasurement =  1000
+    val MinDecimalValueMeasurement = 1L
+    val MaxDecimalValueMeasurement = 1000L
 
 
     implicit val arbitraryInstant: Arbitrary[Instant] =

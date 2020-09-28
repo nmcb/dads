@@ -25,7 +25,8 @@ object Codec {
   case object NoMessageIdError    extends InboundError("No valid (UUID) messageId")
   case object NoSourceIdError     extends InboundError("No valid (UUID) sourceId")
   case object NoUnitError         extends InboundError("No valid (kW) unit of measurement")
-  case object NoValidValueError   extends InboundError("No valid (decimal) value")
+  case object NoValueError        extends InboundError("No (decimal) value present")
+  case object NoPosValueError     extends InboundError("No positive (decimal) value")
   case object NoValidInstantError extends InboundError("No valid instant")
   case object NoSourcesError      extends InboundError("No measurements")
   case object TooManySourcesError extends InboundError(s"Too many (>$MaxSourceIdsPerMessage) measurements")
@@ -56,8 +57,13 @@ object Codec {
     Try(Instant.ofEpochMilli(instant)).fold(_ => NoValidInstantError.invalidNec, _.validNec)
 
   def validateMultiTypeValue(multiType: Option[MultiType]): Val[Long] =
-    if (multiType.isEmpty || !multiType.get.value.isDecimal) NoValidValueError.invalidNec
-    else Try(multiType.get.value.decimal.map(_.toLong).get).fold(_ => NoValidValueError.invalidNec, _.validNec)
+    if (multiType.isEmpty || !multiType.get.value.isDecimal)
+      NoValueError.invalidNec
+    else
+      Try(multiType.get.value.decimal.map(_.toLong).get)
+        .fold( _ => NoValueError.invalidNec
+             , l => if (l > 0) l.validNec else NoPosValueError.invalidNec
+             )
 
   def validateMeasurementValuesList(values: List[MeasurementValues]): Val[Seq[(Instant,Long)]] =
     if (values.isEmpty)

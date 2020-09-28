@@ -25,7 +25,7 @@ trait CounterRepositoryData { this: RealWorld =>
 
     val InstantSpread      = 5 * YEARS.getDuration.dividedBy(2).toMillis
     val MaxSpanLength      = 500
-    val MinAdjustmentValue = -100L
+    val MinAdjustmentValue = 1L        // FIXME add adjustment input validation subject to unit conversion
     val MaxAdjustmentValue = 1000L
 
     implicit val arbitraryInstant: Arbitrary[Instant] =

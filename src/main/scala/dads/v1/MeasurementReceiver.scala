@@ -37,8 +37,22 @@ object MeasurementReceiver {
 
     private def processFor(counterOn: CounterOn)(measurement: Measurement): Future[Done] =
       for {
+
+        // 1) FIXME realTimeRepository (cache) should return measurement.reading instead of counter.adjustment
         current    <- repository.getFrom(counterOn)(measurement.sourceId)(measurement.timestamp)
+
+        // 2) FIXME update realTimeRepository (cache plus cassandra) [SourceId,Measurement]
+        // - not when new instant <= old instant (filtering)
+        // - reading <= 0
+        // - current == 0  => break;
+
+        // 3) FIXME calculate adjustment = measurement.reading - current
+        // - convert measurement unit to adjustment unit
         adjustment =  Adjustment(measurement.sourceId, measurement.timestamp, measurement.reading - current)
+
+        // 4) FIXME counterRepository
+        // - adjustment <= 0 do no update
+        // - adjustment >= max TODO Bart
         _          <- repository.addTo(counterOn)(adjustment)
       } yield Done
 
