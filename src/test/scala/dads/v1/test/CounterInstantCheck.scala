@@ -41,6 +41,6 @@ object CounterInstantCheck
 
   property("sampleBefore <= minorInstant relative to the epoch") =
     forAll { (counterInstant: Counter) =>
-      counterInstant.sampleBefore.toEpochMilli <= counterInstant.minorInstant.toEpochMilli
+      counterInstant.prevMinorInstant.toEpochMilli <= counterInstant.minorInstant.toEpochMilli
     }
 }

@@ -35,6 +35,8 @@ class MeasurementReceiverTest
   import Arbitrary._
   import ArbitraryRequests._
 
+  import DadsSettings._
+
   import transport.grpc._
   import v1.MeasurementDataCnf
   import v1.MeasurementDataInd
@@ -57,7 +59,7 @@ class MeasurementReceiverTest
 
   override protected def afterAll(): Unit = {
     clientSystem.terminate()
-    httpServerBinding.terminate(Main.RealTimeServiceLevelAgreement)
+    httpServerBinding.terminate(RealTimeServiceLevelAgreement)
   }
 
   val client: MeasurementServiceClient =

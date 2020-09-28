@@ -6,6 +6,10 @@ package dads
 
 package object v1 {
 
+  def NameSpaced(name: String): Array[Byte] =
+    s"urn:dads.v1:$name".toArray.map(_.toByte)
+
+
   import java.util._
 
   type MessageId = UUID
@@ -19,7 +23,7 @@ package object v1 {
 
   object SourceId {
     def fromName(name: String): SourceId =
-      UUID.nameUUIDFromBytes(s"dads.v1.$name".toArray.map(_.toByte))
+      UUID.nameUUIDFromBytes(NameSpaced(name))
   }
 
 

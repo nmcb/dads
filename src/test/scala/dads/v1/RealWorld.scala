@@ -12,14 +12,16 @@ trait RealWorld extends PatienceConfiguration {
   import java.time.temporal._
   import ChronoUnit._
 
-  import Main._
-  import org.scalatest.time._
-  import Span._
-
   import scala.concurrent.duration._
   import scala.jdk._
   import DurationConverters._
+
   import scala.util._
+
+  import org.scalatest.time._
+  import Span._
+
+  import DadsSettings._
 
   def now: Instant =
     Instant.now

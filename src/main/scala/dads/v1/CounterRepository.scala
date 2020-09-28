@@ -26,8 +26,7 @@ object CounterRepository {
   import ChronoUnit._
   import TemporalAdjusters._
 
-  final val TimeZoneOfRepositoryOffset: java.time.ZoneOffset = java.time.ZoneOffset.UTC
-  final val FirstDayOfRepositoryWeek  : java.time.DayOfWeek  = java.time.DayOfWeek.MONDAY
+  import DadsSettings._
 
   final val CounterValueColumn   = "value"
   final val SourceIdColumn       = "source"
@@ -46,7 +45,6 @@ object CounterRepository {
     new CounterRepository {
 
       import akka.actor.typed.scaladsl.adapter._
-      import scala.compat.java8._
 
       implicit val executionContext: ExecutionContext =
         system.toClassic.dispatcher
@@ -105,12 +103,9 @@ object CounterRepository {
           .whereColumn(MajorInstantIdColumn).in(majorInstants)
           .whereColumn(MinorInstantIdColumn).in(minorInstants)
           .build()
-          .selectAsync()
+          .selectSeqAsync()
           .map(toCounters)
       }
-
-      private def toDone: Any => Done =
-        _ => Done
 
       private def toCounter(rs: Option[Row]): Long =
         rs.map(_.getLong(CounterValueColumn)).getOrElse(0)
@@ -131,13 +126,10 @@ object CounterRepository {
                     , bucket          : Bucket
                     ) {
 
-    lazy val sampleBefore: Instant =
-      minorInstant
-        .minusMillis(
-          minorChronoUnit
-            .getDuration
-            .dividedBy(Counter.SampleFactor)
-            .toMillis)
+    import Counter._
+
+    lazy val prevMinorInstant: Instant =
+      truncatedTo(minorChronoUnit)(minorInstant.minus(RealTimeChronoUnit.getDuration))
   }
 
   object Counter {
@@ -214,16 +206,17 @@ object CounterRepository {
     private def unroll(size: Int, start: Instant, counterOn: CounterOn) = {
       require(size > 0, "size must be a positive integer")
 
+      @scala.annotation.tailrec
       def loop(before: Instant, accumulator: Vector[Counter]): Seq[Counter] =
         if (accumulator.length >= size)
           accumulator
         else {
           val prevCounter = counterOn(before)
-          loop(prevCounter.sampleBefore, accumulator :+ prevCounter)
+          loop(prevCounter.prevMinorInstant, accumulator :+ prevCounter)
         }
 
       val firstCounter = counterOn(start)
-      loop(firstCounter.sampleBefore, Vector(firstCounter))
+      loop(firstCounter.prevMinorInstant, Vector(firstCounter))
     }
 
     val HourByDaySpanOf: Int => CounterSpanOn =
@@ -247,7 +240,7 @@ object CounterRepository {
     def selectOptionAsync(): Future[Option[Row]] =
       session.select(statement).runWith(Sink.headOption)
 
-    def selectAsync(): Future[Seq[Row]] =
+    def selectSeqAsync(): Future[Seq[Row]] =
       session.select(statement).runWith(Sink.seq)
 
     def updateAsync(): Future[Done] =

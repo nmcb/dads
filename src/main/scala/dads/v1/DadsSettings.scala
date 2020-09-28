@@ -4,6 +4,11 @@
 
 package dads.v1
 
+import java.time._
+import java.time.temporal._
+
+import scala.concurrent.duration._
+
 import com.typesafe.config._
 
 class DadsSettings private (config: Config) {
@@ -22,6 +27,18 @@ class DadsSettings private (config: Config) {
 }
 
 object DadsSettings {
+
+  final val RealTimeServiceLevelAgreement: FiniteDuration =
+    3.seconds
+
+  final val RealTimeChronoUnit: ChronoUnit =
+    ChronoUnit.MILLIS
+
+  final val TimeZoneOfRepositoryOffset: ZoneOffset =
+    ZoneOffset.UTC
+
+  final val FirstDayOfRepositoryWeek  : DayOfWeek  =
+    DayOfWeek.MONDAY
 
   def apply(): DadsSettings =
     new DadsSettings(ConfigFactory.defaultApplication.getConfig("dads"))
