@@ -7,42 +7,30 @@ package test
 package data
 
 import java.time._
-import java.time.temporal._
 
 import org.scalacheck._
 
-trait CounterRepositoryData { this: RealWorld =>
+trait RepositoryData { this: RealWorld =>
 
   import Arbitrary._
   import Gen._
-  import CounterRepository._
+
+  import DadsSettings._
 
   object ArbitraryCounters {
 
-    import ChronoUnit._
+    import CounterRepository._
     import CounterOn._
     import CounterSpanOn._
 
-    val InstantSpread      = 5 * YEARS.getDuration.dividedBy(2).toMillis
-    val MaxSpanLength      = 500
-    val MinAdjustmentValue = 1L        // FIXME add adjustment input validation subject to unit conversion
-    val MaxAdjustmentValue = 1000L
-
-    implicit val arbitraryInstant: Arbitrary[Instant] =
-      Arbitrary {
-        val start = now.toEpochMilli - InstantSpread
-        val end   = now.toEpochMilli + InstantSpread
-        choose(start, end).map(Instant.ofEpochMilli)
-      }
-
     implicit val arbitraryCounterOn: Arbitrary[CounterOn] =
-      Arbitrary(oneOf(
-        Seq( HourByDayCounterOn
-           , DayByMonthCounterOn
-           , MonthByYearCounterOn
-           , WeekByYearCounterOn
-           , YearCounterOn
-           )))
+      Arbitrary(
+        oneOf( HourByDayCounterOn
+             , DayByMonthCounterOn
+             , MonthByYearCounterOn
+             , WeekByYearCounterOn
+             , YearCounterOn
+             ))
 
     implicit val arbitraryCounterInstant: Arbitrary[Counter] =
       Arbitrary {
@@ -55,8 +43,13 @@ trait CounterRepositoryData { this: RealWorld =>
     implicit val arbitraryCounterSpanOn: Arbitrary[CounterSpanOn] =
       Arbitrary {
         for {
-          spanOf <- oneOf(HourByDaySpanOf, DayByMonthSpanOf, MonthByYearSpanOf, WeekByYearSpanOf, YearSpanOf)
-          size   <- choose(1, MaxSpanLength)
+          spanOf <- oneOf( HourByDaySpanOf
+                         , DayByMonthSpanOf
+                         , MonthByYearSpanOf
+                         , WeekByYearSpanOf
+                         , YearSpanOf
+                         )
+          size   <- choose(1, MaxCounterSpanSize)
         } yield spanOf(size)
       }
 
@@ -66,6 +59,20 @@ trait CounterRepositoryData { this: RealWorld =>
           sourceId <- arbitrary[SourceId]
           value    <- choose(MinAdjustmentValue, MaxAdjustmentValue)
         } yield Adjustment(sourceId, now.spread, value)
+      }
+  }
+
+  object ArbitraryDecimals {
+
+    import RealTimeDecimalRepository._
+
+    implicit val arbitraryDecimal: Arbitrary[Decimal] =
+      Arbitrary {
+        for {
+          sourceId <- arbitrary[SourceId]
+          instant  <- arbitrary[Instant]
+          value    <- choose(MinDecimalReadingValue, MaxDecimalReadingValue)
+        } yield Decimal(sourceId, instant, value)
       }
   }
 }

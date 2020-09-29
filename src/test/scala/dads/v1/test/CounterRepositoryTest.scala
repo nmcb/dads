@@ -24,7 +24,7 @@ import data._
 
 class CounterRepositoryTest
   extends AsyncFlatSpec
-    with CounterRepositoryData
+    with RepositoryData
     with Matchers
     with TimeLimits
     with BeforeAndAfterAll
@@ -52,7 +52,7 @@ class CounterRepositoryTest
   def withAdjustments[A](adjustments: Seq[Adjustment])(f: Adjustment => Future[A]): Future[Seq[A]] =
     Future.sequence(adjustments.map(f))
 
-  val repository: CounterRepository =
+  val counterRepository: CounterRepository =
     CounterRepository(settings)(system.toTyped)
 
   override def afterAll(): Unit = {
@@ -64,16 +64,14 @@ class CounterRepositoryTest
 
   it should "update all counters in a baselined addTo/getFrom/addTo/getFrom round-trip" in {
 
-    def tripRoundWith[A](counterOn: CounterOn): Seq[Adjustment] => Instant => Future[Seq[Assertion]] = {
+    def tripRoundWith(counterOn: CounterOn): Seq[Adjustment] => Instant => Future[Seq[Assertion]] = {
       // TODO forAll adjustment and instant ?
       adjustments => instant =>
         withAdjustments(adjustments) { adjustment =>
-          val baseline: Adjustment = adjustment.copy(value = arbitrary[Long].sample.get)
           for {
-            _       <- repository.addTo(counterOn)(baseline)
-            before  <- repository.getFrom(counterOn)(adjustment.sourceId)(instant)
-            _       <- repository.addTo(counterOn)(adjustment)
-            after   <- repository.getFrom(counterOn)(adjustment.sourceId)(instant)
+            before  <- counterRepository.getFrom(counterOn)(adjustment.sourceId)(instant)
+            _       <- counterRepository.addTo(counterOn)(adjustment)
+            after   <- counterRepository.getFrom(counterOn)(adjustment.sourceId)(instant)
           } yield assert(after === before + adjustment.value)
         }
     }

@@ -34,11 +34,29 @@ object DadsSettings {
   final val RealTimeChronoUnit: ChronoUnit =
     ChronoUnit.MILLIS
 
+  final val RealTimeToLive: FiniteDuration =
+    1.day
+
   final val TimeZoneOfRepositoryOffset: ZoneOffset =
     ZoneOffset.UTC
 
   final val FirstDayOfRepositoryWeek  : DayOfWeek  =
     DayOfWeek.MONDAY
+
+  // Inbound limits MeasurementService
+
+  final val MaxSourceIdsPerIndication  = 5
+  final val MaxMeasurementsPerSourceId = 5
+
+  final val MinDecimalReadingValue = 1L
+  final val MaxDecimalReadingValue = 1000L
+
+  final val MinAdjustmentValue = 1L     // FIXME add adjustment input validation subject to unit conversion
+  final val MaxAdjustmentValue = 1000L
+
+  final val MaxCounterSpanSize = 500
+
+
 
   def apply(): DadsSettings =
     new DadsSettings(ConfigFactory.defaultApplication.getConfig("dads"))
