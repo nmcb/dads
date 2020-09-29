@@ -10,7 +10,6 @@ import scala.concurrent._
 
 import akka._
 import akka.actor.typed._
-import akka.stream.scaladsl._
 import akka.stream.alpakka.cassandra._
 import akka.stream.alpakka.cassandra.scaladsl._
 

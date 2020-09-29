@@ -24,7 +24,7 @@ import data._
 
 class CounterRepositoryTest
   extends AsyncFlatSpec
-    with CounterRepositoryData
+    with RepositoryData
     with Matchers
     with TimeLimits
     with BeforeAndAfterAll
@@ -64,7 +64,7 @@ class CounterRepositoryTest
 
   it should "update all counters in a baselined addTo/getFrom/addTo/getFrom round-trip" in {
 
-    def tripRoundWith[A](counterOn: CounterOn): Seq[Adjustment] => Instant => Future[Seq[Assertion]] = {
+    def tripRoundWith(counterOn: CounterOn): Seq[Adjustment] => Instant => Future[Seq[Assertion]] = {
       // TODO forAll adjustment and instant ?
       adjustments => instant =>
         withAdjustments(adjustments) { adjustment =>

@@ -9,7 +9,11 @@ import java.time._
 
 case class Update( messageId    : MessageId
                  , measurements : Seq[Measurement]
-                 ) extends ProtoBuffed
+                 ) extends ProtoBuffed {
+
+  def measurementsBySource: Map[SourceId,Seq[Measurement]] =
+    measurements.groupBy(_.sourceId)
+}
 
 case class Measurement( sourceId  : SourceId
                       , timestamp : Instant

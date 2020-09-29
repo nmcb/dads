@@ -24,10 +24,12 @@ object MeasurementReceiver {
   class DefaultMeasurementService(counterRepository: CounterRepository, realTimeRepository: RealTimeDecimalRepository)(implicit system: ActorSystem[_])
     extends MeasurementService {
 
-    import transport.Codec._
+    import transport._
+    import Codec._
 
     import CounterRepository._
     import CounterOn._
+    import RealTimeDecimalRepository._
 
     val AllCountersOn: Seq[CounterOn] =
       Seq(HourByDayCounterOn, DayByMonthCounterOn, MonthByYearCounterOn, WeekByYearCounterOn, YearCounterOn)
@@ -39,21 +41,33 @@ object MeasurementReceiver {
       for {
 
         // 1) FIXME realTimeRepository (cache) should return measurement.reading instead of counter.adjustment
-        current    <- counterRepository.getFrom(counterOn)(measurement.sourceId)(measurement.timestamp)
+        current <- realTimeRepository.getLast(measurement.sourceId)
 
         // 2) FIXME update realTimeRepository (cache plus cassandra) [SourceId,Measurement]
         // - not when new instant <= old instant (filtering)
         // - reading <= 0
         // - current == 0  => break;
+        addToCounter <- Future.successful {
+          if (current.map(decimal => decimal.instant.isBefore(measurement.timestamp)).getOrElse(false) && measurement.reading >= 0) {
+            realTimeRepository.set(Decimal(measurement.sourceId, measurement.timestamp, measurement.reading))
+            true
+          }
+          else {
+            false
+          }
+        }
 
         // 3) FIXME calculate adjustment = measurement.reading - current
         // - convert measurement unit to adjustment unit
-        adjustment =  Adjustment(measurement.sourceId, measurement.timestamp, measurement.reading - current)
-
-        // 4) FIXME counterRepository
-        // - adjustment <= 0 do no update
-        // - adjustment >= max TODO Bart
-        _          <- counterRepository.addTo(counterOn)(adjustment)
+        _ <- Future.successful(addToCounter).map(add => {
+          if (add) {
+            val adjustment =  Adjustment(measurement.sourceId, measurement.timestamp, measurement.reading - current.get.value.toLong)
+            // 4) FIXME counterRepository
+            // - adjustment <= 0 do no update
+            // - adjustment >= max TODO Bart
+            counterRepository.addTo(counterOn)(adjustment)
+          }
+        })
       } yield Done
 
     private def processForAll(measurement: Measurement): Future[Done] =

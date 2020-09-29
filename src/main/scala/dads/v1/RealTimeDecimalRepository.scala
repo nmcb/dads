@@ -11,24 +11,29 @@ import akka.actor.typed._
 import akka.stream.alpakka.cassandra._
 import akka.stream.alpakka.cassandra.scaladsl._
 import com.datastax.oss.driver.api.core.cql.Row
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder
 import com.datastax.oss.driver.api.querybuilder._
 import dads.v1.CounterRepository.CounterValueColumn
 
 import scala.collection._
+import scala.collection.concurrent.TrieMap
 import scala.concurrent._
 
 object RealTimeDecimalRepository {
 
-  case class Decimal(sourceId: SourceId, instant: Instant, value: Long)
+  case class Decimal(sourceId: SourceId, instant: Instant, value: BigDecimal)
 
-  final val RealTimeDecimalTable = "realtime_decimal"
+  implicit val decimalInstantDescendingOrdering: Ordering[Decimal] =
+    (lhs, rhs) => lhs.instant.compareTo(rhs.instant)
 
-  final val SourceIdColumn  = "source"
-  final val InstantIdColumn = "time"
-  final val ValueColumn     = "value"
-
-  def apply(settings: DadsSettings)(implicit system: ActorSystem[_]): RealTimeDecimalRepository =
+  def cassandra(settings: DadsSettings)(implicit system: ActorSystem[_]): RealTimeDecimalRepository =
     new RealTimeDecimalRepository {
+
+      final val RealTimeDecimalTable = "realtime_decimal"
+
+      final val SourceIdColumn  = "source"
+      final val InstantIdColumn = "time"
+      final val ValueColumn     = "value"
 
       import akka.actor.typed.scaladsl.adapter._
 
@@ -42,21 +47,24 @@ object RealTimeDecimalRepository {
           .get(system)
           .sessionFor(CassandraSessionSettings())
 
-      private val cache: concurrent.Map[SourceId,Option[Decimal]] =
-        concurrent.TrieMap()
+      def getAll(sourceId: SourceId): Future[Seq[Decimal]] =
+        selectFrom(settings.realtimeKeyspace, RealTimeDecimalTable)
+          .column(SourceIdColumn)
+          .column(InstantIdColumn)
+          .column(ValueColumn)
+          .whereColumn(SourceIdColumn).isEqualTo(literal(sourceId))
+          .orderBy(InstantIdColumn, ClusteringOrder.DESC)
+          .build()
+          .selectSeqAsync()
+          .map(toDecimals)
 
-      def readThrough(sourceId: SourceId, instant: Instant): Future[Decimal] = {
-        val cached = cache.getOrElseUpdate(sourceId, None)
+      override def getLast(sourceId: SourceId): Future[Option[Decimal]] =
+        getAll(sourceId).map(_.headOption)
 
-        cached.fold({
-
-        },)
-      }
-
-      def set(decimal: Decimal): Future[Done] = {
+      override def set(decimal: Decimal): Future[Done] = {
         update(settings.realtimeKeyspace, RealTimeDecimalTable)
           .usingTtl(DadsSettings.RealTimeToLive.toSeconds.toInt)
-          .setColumn(ValueColumn, literal(decimal.value))
+          .setColumn(ValueColumn, literal(decimal.value.toLong))
           .whereColumn(SourceIdColumn).isEqualTo(literal(decimal.sourceId))
           .whereColumn(InstantIdColumn).isEqualTo(literal(decimal.instant.toEpochMilli))
           .build()
@@ -65,6 +73,37 @@ object RealTimeDecimalRepository {
 
       private def toDecimal(rs: Option[Row]): Option[Long] =
         rs.map(_.getLong(ValueColumn))
+
+      private def toDecimals(rs: Seq[Row]): Seq[Decimal] =
+        rs.map(r =>
+          Decimal( r.getUuid(SourceIdColumn)
+                 , r.getInstant(InstantIdColumn)
+                 , r.getBigDecimal(ValueColumn)
+                 ))
+    }
+
+  def memory(settings: DadsSettings)(implicit system: ActorSystem[_]): RealTimeDecimalRepository =
+    new RealTimeDecimalRepository {
+
+      import akka.actor.typed.scaladsl.adapter._
+
+      implicit val executionContext: ExecutionContext =
+        system.toClassic.dispatcher
+
+      val storage: concurrent.Map[SourceId, Seq[Decimal]] =
+        TrieMap()
+
+      override def getLast(sourceId: SourceId): Future[Option[Decimal]] =
+        Future
+          .successful(storage.getOrElse(sourceId, None))
+          .map(_.iterator.toSeq.sorted.headOption)
+
+      override def set(decimal: Decimal): Future[Done] =
+        Future.successful{
+          val decimals = storage.getOrElseUpdate(decimal.sourceId, Seq(decimal)).sorted
+          if (decimals.head.instant.isBefore(decimal.instant)) storage.update(decimal.sourceId, decimal +: decimals)
+          Done
+        }
     }
 }
 
@@ -72,7 +111,7 @@ import RealTimeDecimalRepository._
 
 trait RealTimeDecimalRepository extends Repository {
 
-  def get(sourceId: SourceId, instant: Instant): Future[Option[Decimal]]
+  def getLast(sourceId: SourceId): Future[Option[Decimal]]
 
   def set(decimal: Decimal): Future[Done]
 }

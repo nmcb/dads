@@ -11,7 +11,7 @@ import org.scalacheck._
 
 object CounterInstantCheck
   extends Properties("CounterInstant")
-    with data.CounterRepositoryData
+    with data.RepositoryData
     with RealWorld {
 
   import Prop._

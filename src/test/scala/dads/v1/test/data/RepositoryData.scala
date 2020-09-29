@@ -11,29 +11,20 @@ import java.time.temporal._
 
 import org.scalacheck._
 
-trait CounterRepositoryData { this: RealWorld =>
+trait RepositoryData { this: RealWorld =>
 
   import Arbitrary._
   import Gen._
-  import CounterRepository._
 
   object ArbitraryCounters {
 
-    import ChronoUnit._
+    import CounterRepository._
     import CounterOn._
     import CounterSpanOn._
 
-    val InstantSpread      = 5 * YEARS.getDuration.dividedBy(2).toMillis
     val MaxSpanLength      = 500
     val MinAdjustmentValue = 1L        // FIXME add adjustment input validation subject to unit conversion
     val MaxAdjustmentValue = 1000L
-
-    implicit val arbitraryInstant: Arbitrary[Instant] =
-      Arbitrary {
-        val start = now.toEpochMilli - InstantSpread
-        val end   = now.toEpochMilli + InstantSpread
-        choose(start, end).map(Instant.ofEpochMilli)
-      }
 
     implicit val arbitraryCounterOn: Arbitrary[CounterOn] =
       Arbitrary(oneOf(
@@ -66,6 +57,23 @@ trait CounterRepositoryData { this: RealWorld =>
           sourceId <- arbitrary[SourceId]
           value    <- choose(MinAdjustmentValue, MaxAdjustmentValue)
         } yield Adjustment(sourceId, now.spread, value)
+      }
+  }
+
+  object ArbitraryDecimals {
+
+    val MinDecimalValue = 1L        // FIXME add adjustment input validation subject to unit conversion
+    val MaxDecimalValue = Long.MaxValue
+
+    import RealTimeDecimalRepository._
+
+    implicit val arbitraryDecimal: Arbitrary[Decimal] =
+      Arbitrary {
+        for {
+          sourceId <- arbitrary[SourceId]
+          instant  <- arbitrary[Instant]
+          value    <- choose(MinDecimalValue, MinDecimalValue)
+        } yield Decimal(sourceId, instant, value)
       }
   }
 }

@@ -4,6 +4,8 @@
 
 package dads.v1
 
+import org.scalacheck.Arbitrary
+import org.scalacheck.Gen.choose
 import org.scalatest.concurrent._
 
 trait RealWorld extends PatienceConfiguration {
@@ -22,6 +24,8 @@ trait RealWorld extends PatienceConfiguration {
   import Span._
 
   import DadsSettings._
+
+  val InstantSpread = 5 * YEARS.getDuration.dividedBy(2).toMillis
 
   def now: Instant =
     Instant.now
@@ -49,6 +53,13 @@ trait RealWorld extends PatienceConfiguration {
 
   implicit val instantUncertainty: Uncertainty[Instant] =
     instant => instant.`with`(instantUncertaintyAdjusterMillis)
+
+  implicit val instantNowSpread: Arbitrary[Instant] =
+    Arbitrary {
+      val start = now.toEpochMilli - InstantSpread
+      val end   = now.toEpochMilli + InstantSpread
+      choose(start, end).map(Instant.ofEpochMilli)
+    }
 
   // UTILS
 
