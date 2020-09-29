@@ -56,7 +56,7 @@ trait MeasurementReceiverData {
       Arbitrary {
         for {
           timestamp <- arbitrary[Instant].map(_.toEpochMilli)
-          value <- arbitrary[MultiType].map(Some(_))
+          value     <- arbitrary[MultiType].map(Some(_))
         } yield MeasurementValues.of(timestamp, value)
       }
 

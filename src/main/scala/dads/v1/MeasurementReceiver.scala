@@ -21,7 +21,7 @@ object MeasurementReceiver {
   final val MaxSourceIdsPerMessage          = 5
   final val MaxMeasurementValuesPerSourceId = 5
 
-  class DefaultMeasurementService(repository: CounterRepository)(implicit system: ActorSystem[_])
+  class DefaultMeasurementService(counterRepository: CounterRepository, realTimeRepository: RealTimeDecimalRepository)(implicit system: ActorSystem[_])
     extends MeasurementService {
 
     import transport.Codec._
@@ -39,7 +39,7 @@ object MeasurementReceiver {
       for {
 
         // 1) FIXME realTimeRepository (cache) should return measurement.reading instead of counter.adjustment
-        current    <- repository.getFrom(counterOn)(measurement.sourceId)(measurement.timestamp)
+        current    <- counterRepository.getFrom(counterOn)(measurement.sourceId)(measurement.timestamp)
 
         // 2) FIXME update realTimeRepository (cache plus cassandra) [SourceId,Measurement]
         // - not when new instant <= old instant (filtering)
@@ -53,7 +53,7 @@ object MeasurementReceiver {
         // 4) FIXME counterRepository
         // - adjustment <= 0 do no update
         // - adjustment >= max TODO Bart
-        _          <- repository.addTo(counterOn)(adjustment)
+        _          <- counterRepository.addTo(counterOn)(adjustment)
       } yield Done
 
     private def processForAll(measurement: Measurement): Future[Done] =
@@ -72,7 +72,7 @@ object MeasurementReceiver {
   }
 }
 
-class MeasurementReceiver(settings: DadsSettings.ReceiverSettings, repository: CounterRepository)(implicit system: ActorSystem[_]) {
+class MeasurementReceiver(settings: DadsSettings.ReceiverSettings, counterRepository: CounterRepository, realTimeRepository: RealTimeDecimalRepository)(implicit system: ActorSystem[_]) {
 
   //  TODO system inbound boundary:
   //
@@ -94,7 +94,7 @@ class MeasurementReceiver(settings: DadsSettings.ReceiverSettings, repository: C
       system.executionContext
 
     val handler: HttpRequest => Future[HttpResponse] =
-      MeasurementServiceHandler(new DefaultMeasurementService(repository))
+      MeasurementServiceHandler(new DefaultMeasurementService(counterRepository, realTimeRepository))
 
     val futureServerBinding: Future[Http.ServerBinding] =
       Http()(system.toClassic)

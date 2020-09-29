@@ -49,7 +49,7 @@ create table if not exists "aurum"."forever" (
     primary key ((source, rowtime), coltime)
 );
 
--- Realtime tables
+-- RealTime tables
 create table "dads_v1"."realtime_decimal" (
     source uuid,
     time   timestamp,
@@ -60,7 +60,7 @@ create table "dads_v1"."realtime_decimal" (
 -- Precaution only, TTL should be included with an INSERT/UPDATE.
 -- Taken from AP StorageProfile.realTimeTTL (Postgres)
 
--- Realtime (for later)
+-- RealTime (for later)
 -- Just to give an idea of the future.
 -- create table realtime_string (
 --     source        uuid,

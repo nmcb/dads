@@ -34,6 +34,9 @@ object DadsSettings {
   final val RealTimeChronoUnit: ChronoUnit =
     ChronoUnit.MILLIS
 
+  final val RealTimeToLive: FiniteDuration =
+    1.day
+
   final val TimeZoneOfRepositoryOffset: ZoneOffset =
     ZoneOffset.UTC
 

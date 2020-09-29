@@ -117,7 +117,9 @@ object CounterRepository {
   case class Adjustment( sourceId : SourceId
                        , instant  : Instant
                        , value    : Long
-                       )
+                       ) {
+    require(value >= 0, "value must be positive")
+  }
 
   case class Counter( majorInstant    : Instant
                     , minorInstant    : Instant
@@ -234,23 +236,11 @@ object CounterRepository {
     val YearSpanOf: Int => CounterSpanOn =
       size => CounterSpanOn(YEARS, FOREVER)(Year)(size)
   }
-
-  implicit class StatementUtil(statement: Statement[_])(implicit session: CassandraSession, system: ActorSystem[_]) {
-
-    def selectOptionAsync(): Future[Option[Row]] =
-      session.select(statement).runWith(Sink.headOption)
-
-    def selectSeqAsync(): Future[Seq[Row]] =
-      session.select(statement).runWith(Sink.seq)
-
-    def updateAsync(): Future[Done] =
-      session.executeWrite(statement)
-  }
 }
 
 import CounterRepository._
 
-trait CounterRepository {
+trait CounterRepository extends Repository {
 
   def addTo(counterOn: CounterOn)(adjustment: Adjustment): Future[Done]
 

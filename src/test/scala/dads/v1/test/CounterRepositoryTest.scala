@@ -52,7 +52,7 @@ class CounterRepositoryTest
   def withAdjustments[A](adjustments: Seq[Adjustment])(f: Adjustment => Future[A]): Future[Seq[A]] =
     Future.sequence(adjustments.map(f))
 
-  val repository: CounterRepository =
+  val counterRepository: CounterRepository =
     CounterRepository(settings)(system.toTyped)
 
   override def afterAll(): Unit = {
@@ -68,12 +68,10 @@ class CounterRepositoryTest
       // TODO forAll adjustment and instant ?
       adjustments => instant =>
         withAdjustments(adjustments) { adjustment =>
-          val baseline: Adjustment = adjustment.copy(value = arbitrary[Long].sample.get)
           for {
-            _       <- repository.addTo(counterOn)(baseline)
-            before  <- repository.getFrom(counterOn)(adjustment.sourceId)(instant)
-            _       <- repository.addTo(counterOn)(adjustment)
-            after   <- repository.getFrom(counterOn)(adjustment.sourceId)(instant)
+            before  <- counterRepository.getFrom(counterOn)(adjustment.sourceId)(instant)
+            _       <- counterRepository.addTo(counterOn)(adjustment)
+            after   <- counterRepository.getFrom(counterOn)(adjustment.sourceId)(instant)
           } yield assert(after === before + adjustment.value)
         }
     }
