@@ -24,14 +24,9 @@ trait MeasurementReceiverData {
   object ArbitraryRequests {
 
     import grpc.v1._
+    import DadsSettings._
 
     val InstantSpread = 5 * YEARS.getDuration.dividedBy(2).toMillis
-    val MaxMeasurementsPerMeasurementData = 5 // 1024
-    val MaxMeasurementDataPerIndication   = 5 // 1024
-
-    val MinDecimalValueMeasurement = 1L
-    val MaxDecimalValueMeasurement = 1000L
-
 
     implicit val arbitraryInstant: Arbitrary[Instant] =
       Arbitrary {
@@ -42,7 +37,7 @@ trait MeasurementReceiverData {
 
     implicit val arbitraryMultiTypeValueDecimal: Arbitrary[MultiType.Value.Decimal] =
       Arbitrary(
-        choose(MinDecimalValueMeasurement, MaxMeasurementDataPerIndication)
+        choose(MinDecimalReadingValue, MaxDecimalReadingValue)
           .map(_.toString)
           .map(MultiType.Value.Decimal(_)))
 
@@ -66,7 +61,7 @@ trait MeasurementReceiverData {
           sourceId          <- arbitrary[UUID].map(_.toString)
           sequenceNr        =  0    // FIXME unused
           unitOfMeasurement =  "kW" // FIXME unused
-          size              <- choose(1, MaxMeasurementsPerMeasurementData)
+          size              <- choose(1, MaxMeasurementsPerSourceId)
           data              <- listOfN(size, arbitrary[MeasurementValues])
         } yield MeasurementData.of(sourceId, sequenceNr, unitOfMeasurement, data)
       }
@@ -76,7 +71,7 @@ trait MeasurementReceiverData {
         for {
           messageId    <- arbitrary[UUID].map(_.toString)
           device       =  None // FIXME unused
-          size         <- choose(1, MaxMeasurementDataPerIndication)
+          size         <- choose(1, MaxSourceIdsPerIndication)
           measurements <- listOfN(size, arbitrary[MeasurementData])
         } yield MeasurementDataInd.of(messageId, device, measurements)
       }

@@ -16,7 +16,6 @@ object Dependencies {
   val kindProjectorPluginVersion      = "0.11.0"
   val akkaPersistenceCassandraVersion = "1.0.1"
   val datastaxCassandraDriverVersion  = "4.9.0"
-  val googleGuavaVersion              = "29.0-jre"
 
   val scalaTestVersion  = "3.2.0"
   val scalaCheckVersion = "1.14.1"

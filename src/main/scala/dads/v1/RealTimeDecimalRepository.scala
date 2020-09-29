@@ -10,18 +10,29 @@ import akka._
 import akka.actor.typed._
 import akka.stream.alpakka.cassandra._
 import akka.stream.alpakka.cassandra.scaladsl._
-import com.datastax.oss.driver.api.core.cql.Row
-import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder
+
+import com.datastax.oss.driver.api.core.cql._
+import com.datastax.oss.driver.api.core.metadata.schema._
 import com.datastax.oss.driver.api.querybuilder._
-import dads.v1.CounterRepository.CounterValueColumn
 
 import scala.collection._
-import scala.collection.concurrent.TrieMap
+import scala.collection.concurrent._
 import scala.concurrent._
+
+import transport._
 
 object RealTimeDecimalRepository {
 
   case class Decimal(sourceId: SourceId, instant: Instant, value: BigDecimal)
+
+  object Decimal {
+
+    def from(measurement: Measurement): Decimal =
+      Decimal( sourceId = measurement.sourceId
+             , instant  = measurement.timestamp
+             , value    = measurement.reading
+             )
+  }
 
   implicit val decimalInstantDescendingOrdering: Ordering[Decimal] =
     (lhs, rhs) => lhs.instant.compareTo(rhs.instant)

@@ -7,7 +7,6 @@ package test
 package data
 
 import java.time._
-import java.time.temporal._
 
 import org.scalacheck._
 
@@ -16,24 +15,22 @@ trait RepositoryData { this: RealWorld =>
   import Arbitrary._
   import Gen._
 
+  import DadsSettings._
+
   object ArbitraryCounters {
 
     import CounterRepository._
     import CounterOn._
     import CounterSpanOn._
 
-    val MaxSpanLength      = 500
-    val MinAdjustmentValue = 1L        // FIXME add adjustment input validation subject to unit conversion
-    val MaxAdjustmentValue = 1000L
-
     implicit val arbitraryCounterOn: Arbitrary[CounterOn] =
-      Arbitrary(oneOf(
-        Seq( HourByDayCounterOn
-           , DayByMonthCounterOn
-           , MonthByYearCounterOn
-           , WeekByYearCounterOn
-           , YearCounterOn
-           )))
+      Arbitrary(
+        oneOf( HourByDayCounterOn
+             , DayByMonthCounterOn
+             , MonthByYearCounterOn
+             , WeekByYearCounterOn
+             , YearCounterOn
+             ))
 
     implicit val arbitraryCounterInstant: Arbitrary[Counter] =
       Arbitrary {
@@ -46,8 +43,13 @@ trait RepositoryData { this: RealWorld =>
     implicit val arbitraryCounterSpanOn: Arbitrary[CounterSpanOn] =
       Arbitrary {
         for {
-          spanOf <- oneOf(HourByDaySpanOf, DayByMonthSpanOf, MonthByYearSpanOf, WeekByYearSpanOf, YearSpanOf)
-          size   <- choose(1, MaxSpanLength)
+          spanOf <- oneOf( HourByDaySpanOf
+                         , DayByMonthSpanOf
+                         , MonthByYearSpanOf
+                         , WeekByYearSpanOf
+                         , YearSpanOf
+                         )
+          size   <- choose(1, MaxCounterSpanSize)
         } yield spanOf(size)
       }
 
@@ -62,9 +64,6 @@ trait RepositoryData { this: RealWorld =>
 
   object ArbitraryDecimals {
 
-    val MinDecimalValue = 1L        // FIXME add adjustment input validation subject to unit conversion
-    val MaxDecimalValue = Long.MaxValue
-
     import RealTimeDecimalRepository._
 
     implicit val arbitraryDecimal: Arbitrary[Decimal] =
@@ -72,7 +71,7 @@ trait RepositoryData { this: RealWorld =>
         for {
           sourceId <- arbitrary[SourceId]
           instant  <- arbitrary[Instant]
-          value    <- choose(MinDecimalValue, MinDecimalValue)
+          value    <- choose(MinDecimalReadingValue, MaxDecimalReadingValue)
         } yield Decimal(sourceId, instant, value)
       }
   }
