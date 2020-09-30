@@ -62,15 +62,23 @@ jobs:
             sudo wget https://dl.bintray.com/sbt/debian/sbt-$SBT_VERSION.deb -O sbt-$SBT_VERSION.deb
             sudo dpkg -i sbt-$SBT_VERSION.deb
             sudo apt update && sudo apt install openjdk-11-jdk sbt
+      - restore_cache:
+          key: sbt-cache
       - run: sbt docker:publishLocal
+      - save_cache:
+          key: sbt-cache
+          paths:
+            - "~/.ivy2/cache"
+            - "~/.sbt"
+            - "~/.m2"
       - run: echo 'export IMAGE_NAME=${ECR_ENDPOINT}/dads' >> $BASH_ENV
-      - run: docker tag dads:latest $IMAGE_NAME/dads:${CIRCLE_TAG}
+      - run: docker tag dads/dads:latest $IMAGE_NAME/dads:${CIRCLE_TAG}
       - run: docker push $IMAGE_NAME:${CIRCLE_TAG}
       - run: |
           curl -X POST ${DEPLOYER_ENDPOINT} \
           -H "Content-Type: application/json" \
           -H "X-Deploy-Auth: MarcoRocks" \
-          -d '{"serviceName": "dads", "imageName": "$IMAGE_NAME", "tag": { "tag": "${CIRCLE_TAG}", "commit": { "hash": "${CIRCLE_SHA1}", "author": { "name": "", "email": "" } } } }'
+          -d '{"serviceName": "dads", "imageName": "$IMAGE_NAME", "tag": { "tag": "${CIRCLE_TAG}", "commit": { "hash": "${CIRCLE_SHA1}", "author": { "name": "${CIRCLE_USERNAME}", "email": "" } } } }'
 
 
 workflows:
