@@ -16,6 +16,8 @@ import akka.stream.alpakka.cassandra.scaladsl._
 import com.datastax.oss.driver.api.core.cql._
 import com.datastax.oss.driver.api.querybuilder._
 import com.datastax.oss.driver.api.querybuilder.term._
+import com.datastax.oss.driver.api.core.ConsistencyLevel._
+
 
 object CounterRepository {
 
@@ -64,6 +66,7 @@ object CounterRepository {
           .whereColumn(MajorInstantIdColumn).isEqualTo(literal(counter.majorInstant.toEpochMilli))
           .whereColumn(MinorInstantIdColumn).isEqualTo(literal(counter.minorInstant.toEpochMilli))
           .build()
+          .setConsistencyLevel(LOCAL_QUORUM)
           .updateAsync()
       }
 

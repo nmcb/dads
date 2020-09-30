@@ -11,6 +11,7 @@ import akka.actor.typed._
 import akka.stream.alpakka.cassandra._
 import akka.stream.alpakka.cassandra.scaladsl._
 import com.datastax.oss.driver.api.core.cql._
+import com.datastax.oss.driver.api.core.ConsistencyLevel._
 import com.datastax.oss.driver.api.core.metadata.schema._
 import com.datastax.oss.driver.api.querybuilder._
 import dads.v1.DadsSettings.RepositorySettings
@@ -75,11 +76,12 @@ object RealTimeDecimalRepository {
 
       override def set(decimal: Decimal): Future[Done] = {
         update(settings.realtimeKeyspace, RealTimeDecimalTable)
-          .usingTtl(DadsSettings.RealTimeToLive.toSeconds.toInt)
+          //.usingTtl(DadsSettings.RealTimeToLive.toSeconds.toInt)
           .setColumn(ValueColumn, literal(decimal.value.toLong))
           .whereColumn(SourceIdColumn).isEqualTo(literal(decimal.sourceId))
           .whereColumn(InstantIdColumn).isEqualTo(literal(decimal.instant.toEpochMilli))
           .build()
+          .setConsistencyLevel(LOCAL_QUORUM)
           .updateAsync()
       }
 

@@ -10,6 +10,26 @@ import com.typesafe.config._
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
 
+// #-shit
+import akka.actor.{ActorSystem => ClassicActorSystem, ExtendedActorSystem}
+import com.datastax.oss.driver.api.core.CqlSession
+import com.typesafe.config.{Config, ConfigFactory}
+
+import scala.collection.immutable
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Failure
+import akka.stream.alpakka.cassandra._
+import javax.net.ssl.SSLContext
+
+class CassandraSSLSessionProvider(system: ClassicActorSystem, config: Config) extends CqlSessionProvider {
+  override def connect()(implicit ec: ExecutionContext): Future[CqlSession] = {
+      val driverConfig = CqlSessionProvider.driverConfig(system, config)
+      val driverConfigLoader = DriverConfigLoaderFromConfig.fromConfig(driverConfig)
+      CqlSession.builder().withConfigLoader(driverConfigLoader).withSslContext(SSLContext.getDefault()).buildAsync().toScala
+  }
+}
+
 object Main {
 
 
