@@ -43,7 +43,7 @@ class MeasurementReceiverTest
   import v1.MeasurementServiceClient
 
   val testKit: ActorTestKit =
-    ActorTestKit(ConfigFactory.defaultApplication)
+    ActorTestKit(ConfigFactory.defaultApplication.resolve)
 
   val settings: DadsSettings =
     DadsSettings()

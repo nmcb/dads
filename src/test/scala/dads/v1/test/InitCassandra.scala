@@ -26,7 +26,7 @@ object InitCassandra {
   def main(args: Array[String]): Unit = {
 
     val config: Config =
-      ConfigFactory.defaultApplication()
+      ConfigFactory.defaultApplication.resolve
 
     val system: ActorSystem[Nothing] =
       ActorSystem[Nothing](Behaviors.empty, "InitCassandraSystem", config)
