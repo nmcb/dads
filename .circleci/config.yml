@@ -86,7 +86,7 @@ jobs:
           curl -X POST ${DEPLOYER_ENDPOINT} \
           -H "Content-Type: application/json" \
           -H "X-Deployer-Auth: MarcoRocks" \
-          -d "{\"serviceName\": \"dads_dads\", \"imageName\": \"$IMAGE_NAME\", \"tag\": { \"tag\": \"${CIRCLE_TAG}\", \"commit\": { \"hash\": \"${CIRCLE_SHA1}\", \"author\": { \"name\": \"${CIRCLE_USERNAME}\", \"email\": \"\" } } } }"
+          -d "{\"serviceName\": \"dads_dads\", \"imageName\": \"$IMAGE_NAME:${CIRCLE_TAG}\", \"tag\": { \"tag\": \"${CIRCLE_TAG}\", \"commit\": { \"hash\": \"${CIRCLE_SHA1}\", \"author\": { \"name\": \"${CIRCLE_USERNAME}\", \"email\": \"\" } } } }"
 
 
 workflows:
