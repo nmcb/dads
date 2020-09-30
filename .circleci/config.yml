@@ -80,13 +80,13 @@ jobs:
             - "~/.sbt"
             - "~/.m2"
       - run: echo 'export IMAGE_NAME=${ECR_ENDPOINT}/dads' >> $BASH_ENV
-      - run: docker tag dads/dads:latest $IMAGE_NAME/dads:${CIRCLE_TAG}
+      - run: docker tag dads/dads:latest $IMAGE_NAME:${CIRCLE_TAG}
       - run: docker push $IMAGE_NAME:${CIRCLE_TAG}
       - run: |
           curl -X POST ${DEPLOYER_ENDPOINT} \
           -H "Content-Type: application/json" \
-          -H "X-Deploy-Auth: MarcoRocks" \
-          -d '{"serviceName": "dads", "imageName": "$IMAGE_NAME", "tag": { "tag": "${CIRCLE_TAG}", "commit": { "hash": "${CIRCLE_SHA1}", "author": { "name": "${CIRCLE_USERNAME}", "email": "" } } } }'
+          -H "X-Deployer-Auth: MarcoRocks" \
+          -d "{\"serviceName\": \"dads_dads\", \"imageName\": \"$IMAGE_NAME\", \"tag\": { \"tag\": \"${CIRCLE_TAG}\", \"commit\": { \"hash\": \"${CIRCLE_SHA1}\", \"author\": { \"name\": \"${CIRCLE_USERNAME}\", \"email\": \"\" } } } }"
 
 
 workflows:
