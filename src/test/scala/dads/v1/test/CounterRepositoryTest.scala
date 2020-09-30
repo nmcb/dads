@@ -29,7 +29,7 @@ class CounterRepositoryTest
     with TimeLimits
     with BeforeAndAfterAll
     with Eventually
-    with RealWorld {
+    with RealTime {
 
   import Arbitrary._
   import CounterRepository._
@@ -84,7 +84,7 @@ class CounterRepositoryTest
            , tripRoundWith(CounterOn.WeekByYearCounterOn)
            , tripRoundWith(CounterOn.YearCounterOn))
           .map(tripRoundWith => tripRoundWith(fixture))
-          .map(tripRoundWithAll => tripRoundWithAll(futureNow))
+          .map(tripRoundWithAll => tripRoundWithAll(futureNow()))
       ).map(toSucceeded)
     }
   }

@@ -15,7 +15,7 @@ import data._
 object CounterSpanOnCheck
   extends Properties("CounterSpanOn")
     with RepositoryData
-    with RealWorld {
+    with RealTime {
 
   import CounterRepository._
   import ArbitraryCounters._

@@ -8,7 +8,7 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Gen.choose
 import org.scalatest.concurrent._
 
-trait RealWorld extends PatienceConfiguration {
+trait RealTime extends PatienceConfiguration {
 
   import java.time._
   import java.time.temporal._
@@ -27,37 +27,38 @@ trait RealWorld extends PatienceConfiguration {
 
   val InstantSpread = 5 * YEARS.getDuration.dividedBy(2).toMillis
 
-  def now: Instant =
+  def realNow(): Instant =
     Instant.now
 
-  def futureNow: Instant =
-    now.plus(RealTimeServiceLevelAgreement.toJava).`with`(instantUncertaintyAdjusterMillis)
+  def futureNow(): Instant =
+    realNow().plus(RealTimeServiceLevelAgreement.toJava).`with`(instantUncertaintyAdjusterMillis)
 
-  override implicit val patienceConfig: PatienceConfig =
-    PatienceConfig(RealTimeServiceLevelAgreement.toSpan, RealTimeServiceLevelAgreement.div(10).toSpan)
-
-  def InstantUncertaintyMillis: FiniteDuration =
+  final val InstantUncertaintyMillis: FiniteDuration =
     10.millis
 
-  def instantUncertaintyAdjusterMillis: TemporalAdjuster =
+  final val instantUncertaintyAdjusterMillis: TemporalAdjuster =
     temporal => temporal.plus(Random.nextLong(10) / 2, MILLIS)
+
+  override final implicit val patienceConfig: PatienceConfig =
+    PatienceConfig(RealTimeServiceLevelAgreement.toSpan, RealTimeServiceLevelAgreement.div(10).toSpan)
 
   trait Uncertainty[A] {
     def spread(a: A): A
   }
 
-  implicit class RealWorldOps[A : Uncertainty]
-    (a: A) {
-      def spread: A = implicitly[Uncertainty[A]].spread(a)
-    }
+  implicit class RealTimeOps[A : Uncertainty](a: A) {
 
-  implicit val instantUncertainty: Uncertainty[Instant] =
+    val withUncertainty: A =
+      implicitly[Uncertainty[A]].spread(a)
+  }
+
+  implicit def implicitInstantUncertainty: Uncertainty[Instant] =
     instant => instant.`with`(instantUncertaintyAdjusterMillis)
 
-  implicit val instantNowSpread: Arbitrary[Instant] =
+  implicit def implicitRealNowWithSpread: Arbitrary[Instant] =
     Arbitrary {
-      val start = now.toEpochMilli - InstantSpread
-      val end   = now.toEpochMilli + InstantSpread
+      val start = realNow().toEpochMilli - InstantSpread
+      val end   = realNow().toEpochMilli + InstantSpread
       choose(start, end).map(Instant.ofEpochMilli)
     }
 

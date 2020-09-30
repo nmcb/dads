@@ -28,7 +28,7 @@ class RealTimeRepositoryTest
     with TimeLimits
     with BeforeAndAfterAll
     with Eventually
-    with RealWorld {
+    with RealTime {
 
   import Arbitrary._
   import ArbitraryDecimals._

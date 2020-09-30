@@ -10,7 +10,7 @@ import java.time._
 
 import org.scalacheck._
 
-trait RepositoryData { this: RealWorld =>
+trait RepositoryData { this: RealTime =>
 
   import Arbitrary._
   import Gen._
@@ -58,7 +58,7 @@ trait RepositoryData { this: RealWorld =>
         for {
           sourceId <- arbitrary[SourceId]
           value    <- choose(MinAdjustmentValue, MaxAdjustmentValue)
-        } yield Adjustment(sourceId, now.spread, value)
+        } yield Adjustment(sourceId, realNow().withUncertainty, value)
       }
   }
 

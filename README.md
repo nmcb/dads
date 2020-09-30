@@ -1,14 +1,15 @@
 ## DADS
 
-Provides bucketed counter storage.
+Provides for humanly understandable time unit bucketed counter storage.
 
 ```
 SourceId       : java.util.UUID        -- Type 5
 Instant        : java.time.Instant     -- scala.Long since Unix EPOCH in millis
-ChronoUnit     : java.time.ChronoUnit  -- Hours, Days, Months, Years
-CassandraTable : String                -- Cassandra storage identifier
+ChronoUnit     : java.time.ChronoUnit  -- Hours, Days, Months, Years [HOURS DAYS MONTHS YEARS]                                       
+CassandraTable : scala.String          -- Cassandra storage identifier
 Value          : scala.Long            -- An (under normal "counter" operations positive) integer
 
+                                                            -- FIXME model (Forever,Years)
 Bucket         : ChronoUnit -> ChronoUnit -> CassandraTable -- Counter identifier indirection
 CounterOn      : Instant    -> Bucket                       -- Counter identifier indirected
 Adjustment     : SourceId   -> Instant    -> Value
@@ -17,6 +18,20 @@ CounterAddTo   : CounterOn -> Adjustment -> Done               -- Counter mutato
 CounterGetFrom : CounterOn -> SourceId   -> Instant -> Value   -- Counter accessor verb
 ```
 
+Additionally, it provides for future humanly understandable real-time decimal storage.
+
+```
+Decimal     : SourceId -> Instant -> Value
+
+Number a where
+  toValue a   : Value
+  fromValue v : Number
+
+Set         : Number a => a -> Done
+LastGetLast : Number a => Sourceid -> Number a
+```
+
+Real-time storage is provided in-memory and persistent; latter storage form with a 1 hour TTL. 
 
 ### Publish and Deploy in Development
 

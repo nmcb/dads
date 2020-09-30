@@ -30,7 +30,7 @@ class MeasurementReceiverTest
     with Matchers
     with ScalaFutures
     with MeasurementReceiverData
-    with RealWorld
+    with RealTime
 {
   import Arbitrary._
   import ArbitraryRequests._
