@@ -30,9 +30,17 @@ jobs:
             sudo wget https://dl.bintray.com/sbt/debian/sbt-$SBT_VERSION.deb -O sbt-$SBT_VERSION.deb
             sudo dpkg -i sbt-$SBT_VERSION.deb
             sudo apt update && sudo apt install openjdk-11-jdk sbt
+      - restore_cache:
+          key: sbt-cache
       - run:
           name: Test Suite
           command: sbt test
+      - save_cache:
+          key: sbt-cache
+          paths:
+            - "~/.ivy2/cache"
+            - "~/.sbt"
+            - "~/.m2"
 
   tag_deployment:
     machine: true
