@@ -18,7 +18,7 @@ object Main {
     implicit val system: ActorSystem[Nothing] =
       ActorSystem[Nothing]( Behaviors.empty
                           , "DadsMainActorSystem"
-                          , ConfigFactory.defaultApplication
+                          , ConfigFactory.defaultApplication.resolve
                           )
 
     new Main().run()
