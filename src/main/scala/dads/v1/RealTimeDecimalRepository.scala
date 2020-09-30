@@ -69,8 +69,10 @@ object RealTimeDecimalRepository {
           .selectSeqAsync()
           .map(toDecimals)
 
-      override def getLast(sourceId: SourceId): Future[Option[Decimal]] =
+      override def getLast(sourceId: SourceId): Future[Option[Decimal]] = {
+        // FIXME retrieve last Decimal directly, cassandra provides
         getAll(sourceId).map(_.headOption)
+      }
 
       override def set(decimal: Decimal): Future[Done] = {
         update(settings.realtimeKeyspace, RealTimeDecimalTable)

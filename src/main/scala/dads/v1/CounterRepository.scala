@@ -48,6 +48,8 @@ object CounterRepository {
       implicit val executionContext: ExecutionContext =
         system.toClassic.dispatcher
 
+      // FIXME since we use authentication we get warnings in test
+      // [WARN] [s0] /127.0.0.1:9042 did not send an authentication challenge; This is suspicious because the driver expects authentication
       implicit val session: CassandraSession =
         CassandraSessionRegistry
           .get(system)

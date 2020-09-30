@@ -44,10 +44,8 @@ object MeasurementReceiver {
 
     private def process(measurement: Measurement): Future[Done] = {
 
-      def isNewMeasurement(current: Option[Decimal], measurement: Measurement): Boolean = (
-        current.map(decimal => decimal.instant.isBefore(measurement.timestamp)).getOrElse(false)
-        && measurement.reading >= 0
-      )
+      def isNewMeasurement(current: Option[Decimal], measurement: Measurement): Boolean =
+        current.exists(decimal => decimal.instant.isBefore(measurement.timestamp)) && measurement.reading >= 0
 
       for {
         current <- realTimeRepository.getLast(measurement.sourceId)
@@ -59,17 +57,20 @@ object MeasurementReceiver {
                        else
                          Future.successful(false)
                      )
-        _       <- Future
+        result  <- Future
                      .successful(added)
-                     .flatMap(add =>
-                       if (add) Future.sequence(AllCountersOn.map(counterOn =>
-                         counterRepository.addTo(counterOn)(
-                           Adjustment( measurement.sourceId
-                                     , measurement.timestamp
-                                     , measurement.reading - current.get.value.toLong))))
+                     .flatMap[Done](add =>
+                       if (add)
+                         Future.sequence(
+                           AllCountersOn.map(counterOn =>
+                             counterRepository.addTo(counterOn)(
+                               Adjustment( measurement.sourceId
+                                         , measurement.timestamp
+                                         , measurement.reading - current.get.value.toLong)))
+                         ).map(toDone)
                        else
                          Future.successful(Done))
-      } yield Done
+      } yield result
     }
 
     def process(inbound: MeasurementDataInd): Future[MeasurementDataCnf] =
@@ -80,6 +81,9 @@ object MeasurementReceiver {
              , update => Future
                            .sequence(update.measurements.map(measurement => process(measurement)))
                            .map(_ => MeasurementDataCnf(update.messageId.toString)))
+
+    private val toDone: Any => Done =
+      _ => Done
   }
 }
 
@@ -89,7 +93,7 @@ class MeasurementReceiver(settings: DadsSettings.ReceiverSettings, counterReposi
   //
   //  x Input validation
   //  x Input codec
-  //  - Acknowledgement state (how principled do you dare to discuss this?)
+  //  x Acknowledgement state (how principled do you dare to discuss this?) [math guarantees]
   //  x Drop inbound chain
   //  - Logging
   //  - Horizontal scaling: testing and non-functionals

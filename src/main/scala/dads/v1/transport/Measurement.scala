@@ -20,3 +20,9 @@ case class Measurement( sourceId  : SourceId
                       , reading   : Long
                       , unit      : NaturalUnit
                       ) extends ProtoBuffed
+
+object Measurement {
+
+  implicit val measurementInstantDescendingOrdering: Ordering[Measurement] =
+    (lhs, rhs) => lhs.timestamp.compareTo(rhs.timestamp)
+}
