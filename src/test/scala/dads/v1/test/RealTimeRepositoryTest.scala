@@ -10,7 +10,7 @@ import java.time._
 import akka.actor._
 import akka.actor.typed.scaladsl.adapter._
 import akka.event._
-
+import dads.v1.DadsSettings.RepositorySettings
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.concurrent._
@@ -18,7 +18,6 @@ import org.scalatest.flatspec._
 import org.scalatest.matchers.should._
 
 import scala.concurrent._
-
 import data._
 
 class RealTimeRepositoryTest
@@ -42,8 +41,8 @@ class RealTimeRepositoryTest
   implicit val log: LoggingAdapter =
     system.log
 
-  val settings: DadsSettings =
-    DadsSettings()
+  val settings: RepositorySettings =
+    DadsSettings().repositorySettings
 
   val fixture: Seq[Decimal] =
     Seq.fill(FixtureSize)(arbitrary[Decimal].sample.get).sorted

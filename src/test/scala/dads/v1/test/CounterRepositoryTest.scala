@@ -8,18 +8,15 @@ package test
 import java.time._
 
 import scala.concurrent._
-
 import akka.actor._
 import akka.event._
 import akka.actor.typed.scaladsl.adapter._
-
+import dads.v1.DadsSettings.RepositorySettings
 import org.scalatest._
 import org.scalatest.concurrent._
 import org.scalatest.flatspec._
 import org.scalatest.matchers.should._
-
 import org.scalacheck._
-
 import data._
 
 class CounterRepositoryTest
@@ -43,8 +40,8 @@ class CounterRepositoryTest
   implicit val log: LoggingAdapter =
     system.log
 
-  val settings: DadsSettings =
-    DadsSettings()
+  val settings: RepositorySettings =
+    DadsSettings().repositorySettings
 
   val fixture: Seq[Adjustment] =
     Seq.fill(FixtureSize)(arbitrary[Adjustment].sample.get)

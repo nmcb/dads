@@ -15,15 +15,11 @@ class DadsSettings private (config: Config) {
 
   import DadsSettings._
 
-  lazy val realtimeKeyspace: String =
-    config.getConfig("cassandra").getString("realtime-keyspace")
-
-  lazy val counterKeyspace: String =
-    config.getConfig("cassandra").getString("counter-keyspace")
+  lazy val repositorySettings =
+    RepositorySettings(config.getConfig("repository"))
 
   lazy val measurementReceiver: ReceiverSettings =
     ReceiverSettings(config.getConfig("receivers.measurement"))
-
 }
 
 object DadsSettings {
@@ -64,7 +60,22 @@ object DadsSettings {
   def apply(config: Config): DadsSettings =
     new DadsSettings(config)
 
-  class ReceiverSettings private(config: Config) {
+  class RepositorySettings private(config: Config) {
+
+    lazy val realtimeKeyspace: String =
+      config.getString("realtime-keyspace")
+
+    lazy val counterKeyspace: String =
+      config.getString("counter-keyspace")
+  }
+
+  object RepositorySettings {
+
+    def apply(config: Config): RepositorySettings =
+      new RepositorySettings(config)
+  }
+
+  class ReceiverSettings private (config: Config) {
 
     lazy val host: String =
       config.getString("host")

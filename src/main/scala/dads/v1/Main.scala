@@ -42,8 +42,8 @@ class Main(implicit system: ActorSystem[_]) {
   def run(): Unit = {
     system.log.info("DADS Starting...")
     new MeasurementReceiver( settings.measurementReceiver
-                           , CounterRepository(settings)
-                           , RealTimeDecimalRepository.cassandra(settings)
+                           , CounterRepository(settings.repositorySettings)
+                           , RealTimeDecimalRepository.cassandra(settings.repositorySettings)
                            ).run()
   }
 }

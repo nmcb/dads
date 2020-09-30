@@ -22,8 +22,8 @@ class DadsSettingsTest
           .load("application-test-dads")
           .getConfig("dads"))
 
-    settings.realtimeKeyspace  shouldBe "realtimeKeyspace"
-    settings.counterKeyspace   shouldBe "counterKeyspace"
+    settings.repositorySettings.realtimeKeyspace  shouldBe "realtimeKeyspace"
+    settings.repositorySettings.counterKeyspace   shouldBe "counterKeyspace"
 
     settings.measurementReceiver.host shouldBe "host"
     settings.measurementReceiver.port shouldBe  1234
@@ -32,10 +32,10 @@ class DadsSettingsTest
   it should "read runtime settings from default (main) application.conf" in {
     val settings = DadsSettings()
 
-    settings.realtimeKeyspace  shouldBe "dads_v1"
-    settings.counterKeyspace   shouldBe "aurum"
+    settings.repositorySettings.realtimeKeyspace  shouldBe "dads_v1"
+    settings.repositorySettings.counterKeyspace   shouldBe "aurum"
 
-    settings.measurementReceiver.host shouldBe "127.0.0.1"
+    settings.measurementReceiver.host shouldBe "0.0.0.0"
     settings.measurementReceiver.port shouldBe 8080
   }
 }

@@ -40,7 +40,7 @@ object CounterRepository {
   case object Year        extends Bucket("forever")
 
 
-  def apply(settings: DadsSettings)(implicit system: ActorSystem[_]): CounterRepository =
+  def apply(settings: RepositorySettings)(implicit system: ActorSystem[_]): CounterRepository =
     new CounterRepository {
 
       import akka.actor.typed.scaladsl.adapter._

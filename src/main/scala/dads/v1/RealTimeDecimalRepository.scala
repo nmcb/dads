@@ -10,15 +10,14 @@ import akka._
 import akka.actor.typed._
 import akka.stream.alpakka.cassandra._
 import akka.stream.alpakka.cassandra.scaladsl._
-
 import com.datastax.oss.driver.api.core.cql._
 import com.datastax.oss.driver.api.core.metadata.schema._
 import com.datastax.oss.driver.api.querybuilder._
+import dads.v1.DadsSettings.RepositorySettings
 
 import scala.collection._
 import scala.collection.concurrent._
 import scala.concurrent._
-
 import transport._
 
 object RealTimeDecimalRepository {
@@ -37,7 +36,7 @@ object RealTimeDecimalRepository {
   implicit val decimalInstantDescendingOrdering: Ordering[Decimal] =
     (lhs, rhs) => lhs.instant.compareTo(rhs.instant)
 
-  def cassandra(settings: DadsSettings)(implicit system: ActorSystem[_]): RealTimeDecimalRepository =
+  def cassandra(settings: RepositorySettings)(implicit system: ActorSystem[_]): RealTimeDecimalRepository =
     new RealTimeDecimalRepository {
 
       final val RealTimeDecimalTable = "realtime_decimal"

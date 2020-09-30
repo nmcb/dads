@@ -53,8 +53,8 @@ class MeasurementReceiverTest
 
   val futureHttpServerBinding: Future[Http.ServerBinding] =
     new MeasurementReceiver( settings.measurementReceiver
-                           , CounterRepository(settings)
-                           , RealTimeDecimalRepository.cassandra(settings))(testKit.system).run()
+                           , CounterRepository(settings.repositorySettings)
+                           , RealTimeDecimalRepository.cassandra(settings.repositorySettings))(testKit.system).run()
 
   val httpServerBinding: Http.ServerBinding =
     futureHttpServerBinding.futureValue
