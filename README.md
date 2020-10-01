@@ -1,5 +1,7 @@
 ## DADS
 
+**FIXME outdated**
+
 Provides for humanly understandable time unit bucketed counter storage.
 
 ```
