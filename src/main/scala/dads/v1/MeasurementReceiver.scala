@@ -48,7 +48,9 @@ object MeasurementReceiver {
         current.exists(decimal => decimal.instant.isBefore(measurement.timestamp)) && measurement.reading >= 0
 
       for {
+        _       <- Future.successful(system.log.info(s"processing measurement: ${measurement.sourceId}"))
         current <- realTimeRepository.getLast(measurement.sourceId)
+        _       <- Future.successful(system.log.info(s"current value: ${measurement.sourceId}=${current}"))
         added   <- Future
                      .successful(isNewMeasurement(current, measurement))
                      .flatMap(newMeasurement =>
@@ -57,6 +59,7 @@ object MeasurementReceiver {
                        else
                          Future.successful(false)
                      )
+        _       <- Future.successful(system.log.info(s"value added to realtime: ${measurement.sourceId}=${added}"))
         result  <- Future
                      .successful(added)
                      .flatMap[Done](add =>
@@ -67,9 +70,15 @@ object MeasurementReceiver {
                                Adjustment( measurement.sourceId
                                          , measurement.timestamp
                                          , measurement.reading - current.get.value.toLong)))
+                         ).map(_ => {
+                           system.log.info(s"value added to counters: ${measurement.sourceId}=${added}")
+                         }
                          ).map(toDone)
                        else
-                         Future.successful(Done))
+                         Future.successful(Done)).map(_ => {
+                            system.log.info(s"value added to counters: ${measurement.sourceId}=${added}")
+                         }).map(toDone)
+        _       <- Future.successful(system.log.info(s"result: ${measurement.sourceId}=${result}"))
       } yield result
     }
 

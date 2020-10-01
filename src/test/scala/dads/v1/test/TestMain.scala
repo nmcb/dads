@@ -31,6 +31,7 @@ object TestMain extends App with RealTime with MeasurementReceiverData {
         .withTls(false)) // FIXME should not be used in production
 
   val ind = arbitrary[MeasurementDataInd].sample.getOrElse(throw new RuntimeException("booms"))
+  println(ind.toProtoString)
   val task  = client.process(ind)
 
   implicit val ec = clientSystem.executionContext
