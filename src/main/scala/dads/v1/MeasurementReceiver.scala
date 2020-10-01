@@ -44,11 +44,15 @@ object MeasurementReceiver {
 
     private def process(measurement: Measurement): Future[Done] = {
 
-      def isNewMeasurement(current: Option[Decimal], measurement: Measurement): Boolean =
-        current.exists(decimal => decimal.instant.isBefore(measurement.timestamp)) && measurement.reading >= 0
+      def isNewMeasurement(current: Option[Decimal], measurement: Measurement): Boolean = {
+        system.log.info(s"new measurement? [${current},${measurement}] ...")
+        val res = current.exists(decimal => decimal.instant.isBefore(measurement.timestamp)) || (current.isEmpty && measurement.reading >= 0)
+        system.log.info(s"new measurement? [${res}]")
+        res
+      }
 
       for {
-        _       <- Future.successful(system.log.info(s"processing measurement: ${measurement.sourceId}"))
+        _       <- Future.successful(system.log.info(s"processing measurement: ${measurement.sourceId}=${measurement.reading}"))
         current <- realTimeRepository.getLast(measurement.sourceId)
         _       <- Future.successful(system.log.info(s"current value: ${measurement.sourceId}=${current}"))
         added   <- Future
@@ -69,7 +73,7 @@ object MeasurementReceiver {
                              counterRepository.addTo(counterOn)(
                                Adjustment( measurement.sourceId
                                          , measurement.timestamp
-                                         , measurement.reading - current.get.value.toLong)))
+                                         , measurement.reading - current.flatMap(d => Some(d.value.toLong)).getOrElse(0L))))
                          ).map(_ => {
                            system.log.info(s"value added to counters: ${measurement.sourceId}=${added}")
                          }
