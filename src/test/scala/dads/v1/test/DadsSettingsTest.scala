@@ -17,7 +17,7 @@ class DadsSettingsTest
 
   it should "read all settings from provided (fake) application-test-dads.conf" in {
     val settings: DadsSettings =
-      DadsSettings(
+      new DadsSettings(
         ConfigFactory
           .load("application-test-dads")
           .getConfig("dads"))
@@ -30,7 +30,7 @@ class DadsSettingsTest
   }
 
   it should "read runtime settings from default (main) application.conf" in {
-    val settings = DadsSettings()
+    val settings = new DadsSettings()
 
     settings.repositorySettings.realtimeKeyspace  shouldBe "dads_v1"
     settings.repositorySettings.counterKeyspace   shouldBe "aurum"

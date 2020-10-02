@@ -37,7 +37,7 @@ class Main(implicit system: ActorSystem[_]) {
         .info("DADS Stopped"))
 
   lazy val settings: DadsSettings =
-    DadsSettings()
+    new DadsSettings()
 
   def run(): Unit = {
     system.log.info("DADS Starting...")

@@ -46,7 +46,7 @@ class MeasurementReceiverTest
     ActorTestKit(ConfigFactory.defaultApplication.resolve)
 
   val settings: DadsSettings =
-    DadsSettings()
+    new DadsTestSettings()
 
   implicit val clientSystem: ActorSystem[_] =
     ActorSystem(Behaviors.empty, "MeasurementServiceClient")
@@ -67,11 +67,11 @@ class MeasurementReceiverTest
   val client: MeasurementServiceClient =
     MeasurementServiceClient(
       GrpcClientSettings
-        .connectToServiceAt(settings.measurementReceiver.host, settings.measurementReceiver.port)
+        .connectToServiceAt("127.0.0.1", settings.measurementReceiver.port)
         .withTls(false)) // FIXME should not be used in production
 
   "MeasurementReceiver" should {
-    "process a single measurement data indication" in { // TODO can we get forAll to work here ?
+    "process an arbitrary measurement data indication" in { // TODO can we get forAll to work here ?
       val ind = arbitrary[MeasurementDataInd].sample.getOrElse(throw new RuntimeException("booms"))
       val task  = client.process(ind)
       task.futureValue should be (MeasurementDataCnf(ind.messageId))

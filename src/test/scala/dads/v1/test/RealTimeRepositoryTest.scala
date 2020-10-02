@@ -42,7 +42,7 @@ class RealTimeRepositoryTest
     system.log
 
   val settings: RepositorySettings =
-    DadsSettings().repositorySettings
+    new DadsSettings().repositorySettings
 
   val fixture: Seq[Decimal] =
     Seq.fill(FixtureSize)(arbitrary[Decimal].sample.get).sorted

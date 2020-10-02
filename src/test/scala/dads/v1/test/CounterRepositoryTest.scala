@@ -41,7 +41,7 @@ class CounterRepositoryTest
     system.log
 
   val settings: RepositorySettings =
-    DadsSettings().repositorySettings
+    new DadsSettings().repositorySettings
 
   val fixture: Seq[Adjustment] =
     Seq.fill(FixtureSize)(arbitrary[Adjustment].sample.get)

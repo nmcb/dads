@@ -11,15 +11,16 @@ import scala.concurrent.duration._
 
 import com.typesafe.config._
 
-class DadsSettings private (config: Config) {
-
+class DadsSettings(config: Config =
+  ConfigFactory.defaultApplication.getConfig("dads"))
+{
   import DadsSettings._
 
   lazy val repositorySettings =
-    RepositorySettings(config.getConfig("repository"))
+    new RepositorySettings(config.getConfig("repository"))
 
   lazy val measurementReceiver: ReceiverSettings =
-    ReceiverSettings(config.getConfig("receivers.measurement"))
+    new ReceiverSettings(config.getConfig("receivers.measurement"))
 }
 
 object DadsSettings {
@@ -53,14 +54,7 @@ object DadsSettings {
   final val MaxCounterSpanSize = 500
 
 
-
-  def apply(): DadsSettings =
-    new DadsSettings(ConfigFactory.defaultApplication.getConfig("dads"))
-
-  def apply(config: Config): DadsSettings =
-    new DadsSettings(config)
-
-  class RepositorySettings private(config: Config) {
+  class RepositorySettings(config: Config) {
 
     lazy val realtimeKeyspace: String =
       config.getString("realtime-keyspace")
@@ -69,24 +63,12 @@ object DadsSettings {
       config.getString("counter-keyspace")
   }
 
-  object RepositorySettings {
-
-    def apply(config: Config): RepositorySettings =
-      new RepositorySettings(config)
-  }
-
-  class ReceiverSettings private (config: Config) {
+  class ReceiverSettings(config: Config) {
 
     lazy val host: String =
       config.getString("host")
 
     lazy val port: Int =
       config.getInt("port")
-  }
-
-  object ReceiverSettings {
-
-    def apply(config: Config): ReceiverSettings =
-      new ReceiverSettings(config)
   }
 }
