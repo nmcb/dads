@@ -1,13 +1,11 @@
 ## DADS
 
-**FIXME outdated**
-
 Provides for humanly understandable time unit bucketed counter storage.
 
 ```
 SourceId       : java.util.UUID        -- Type 5
 Instant        : java.time.Instant     -- scala.Long since Unix EPOCH in millis
-ChronoUnit     : java.time.ChronoUnit  -- Hours, Days, Months, Years [HOURS DAYS MONTHS YEARS]                                       
+ChronoUnit     : java.time.ChronoUnit  -- Hours, Days, Months, Years, i.e. [HOURS DAYS MONTHS YEARS]                                       
 CassandraTable : scala.String          -- Cassandra storage identifier
 Value          : scala.Long            -- An (under normal "counter" operations positive) integer
 
@@ -69,6 +67,8 @@ To deploy the application in development (test production locally) run:
 ```
 
 ### Publish and Deploy in Production
+
+**FIXME outdated**
 
 To initialise cassandra for application production run:
 

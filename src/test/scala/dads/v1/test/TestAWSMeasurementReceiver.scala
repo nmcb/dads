@@ -37,7 +37,7 @@ object TestAWSMeasurementReceiver extends App with RealTime with MeasurementRece
   val indication: MeasurementDataInd =
     arbitrary[MeasurementDataInd].sample.getOrElse(throw new RuntimeException("booms"))
 
-  println(s"Testing with message: ${indication.messageId}")
+  println(s"Testing with new messages: ${indication.messageId}-${indication}")
   val task: Future[MeasurementDataCnf] =
     client.process(indication)
 
