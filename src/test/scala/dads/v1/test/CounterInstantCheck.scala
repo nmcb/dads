@@ -7,15 +7,14 @@ package test
 
 import java.time.temporal._
 
+import dads.v1.test.data.ArbitraryCounters
 import org.scalacheck._
 
 object CounterInstantCheck
   extends Properties("CounterInstant")
-    with data.RepositoryData
-    with RealTime {
-
+  with ArbitraryCounters
+{
   import Prop._
-  import ArbitraryCounters._
   import CounterRepository._
 
   def truncation(chronoUnit: ChronoUnit): String =
@@ -39,7 +38,7 @@ object CounterInstantCheck
       counterInstant.minorInstant.toString endsWith truncation(counterInstant.minorChronoUnit)
     }
 
-  property("sampleBefore <= minorInstant relative to the epoch") =
+  property("prevMinorInstant <= minorInstant relative to the epoch") =
     forAll { (counterInstant: Counter) =>
       counterInstant.prevMinorInstant.toEpochMilli <= counterInstant.minorInstant.toEpochMilli
     }

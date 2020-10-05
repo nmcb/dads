@@ -29,11 +29,9 @@ class MeasurementReceiverTest
     with BeforeAndAfterAll
     with Matchers
     with ScalaFutures
-    with MeasurementReceiverData
-    with RealTime
+    with ArbitraryRequests
 {
   import Arbitrary._
-  import ArbitraryRequests._
 
   import DadsSettings._
 
@@ -72,7 +70,7 @@ class MeasurementReceiverTest
 
   "MeasurementReceiver" should {
     "process an arbitrary measurement data indication" in { // TODO can we get forAll to work here ?
-      val ind = arbitrary[MeasurementDataInd].sample.getOrElse(throw new RuntimeException("booms"))
+      val ind = arbitrary[MeasurementDataInd].sample.get
       val task  = client.process(ind)
       task.futureValue should be (MeasurementDataCnf(ind.messageId))
     }

@@ -12,7 +12,6 @@ import akka.actor.typed.scaladsl._
 
 object Main {
 
-
   def main(args: Array[String]): Unit = {
 
     implicit val system: ActorSystem[Nothing] =
@@ -20,7 +19,6 @@ object Main {
                           , "DadsMainActorSystem"
                           , ConfigFactory.defaultApplication.resolve
                           )
-
     new Main().run()
   }
 }

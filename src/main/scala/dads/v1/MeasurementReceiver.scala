@@ -37,7 +37,8 @@ object MeasurementReceiver {
          , DayByMonthCounterOn
          , MonthByYearCounterOn
          , WeekByYearCounterOn
-         , YearCounterOn)
+         , YearCounterOn
+         )
 
     implicit val executionContext: ExecutionContext =
       system.executionContext
@@ -45,16 +46,33 @@ object MeasurementReceiver {
     private def process(measurement: Measurement): Future[Done] = {
 
       def isNewMeasurement(current: Option[Decimal], measurement: Measurement): Boolean = {
-        system.log.info(s"new measurement? [${current},${measurement}] ...")
         val res = current.exists(decimal => decimal.instant.isBefore(measurement.timestamp)) || (current.isEmpty && measurement.reading >= 0)
-        system.log.info(s"new measurement? [${res}]")
+        system.log.info(s"new measurement [${res}]")
         res
       }
 
+      def isIncreasing(current: Option[Decimal], measurement: Measurement): Boolean =
+        current.map(decimal => decimal.value < measurement.reading).getOrElse(true)
+
+      def adjustmentFor(current: Option[Decimal], measurement: Measurement): Adjustment = {
+        current match {
+          case None =>
+            Adjustment( measurement.sourceId
+                      , measurement.timestamp
+                      , measurement.reading
+                      )
+          case Some(currentDecimal) =>
+            Adjustment( measurement.sourceId
+                      , measurement.timestamp
+                      , currentDecimal.value - measurement.reading
+                      )
+        }
+      }
+
       for {
-        _       <- Future.successful(system.log.info(s"processing measurement: ${measurement.sourceId}=${measurement.reading}"))
+        _       <- Future.successful(system.log.info(s"processing measurement: $measurement"))
         current <- realTimeRepository.getLast(measurement.sourceId)
-        _       <- Future.successful(system.log.info(s"current value: ${measurement.sourceId}=${current}"))
+        _       <- Future.successful(system.log.info(s"current value: $current"))
         added   <- Future
                      .successful(isNewMeasurement(current, measurement))
                      .flatMap(newMeasurement =>
@@ -63,26 +81,22 @@ object MeasurementReceiver {
                        else
                          Future.successful(false)
                      )
-        _       <- Future.successful(system.log.info(s"value added to realtime: ${measurement.sourceId}=${added}"))
+        _       <- Future.successful(system.log.info(s"value added to realtime: $added"))
         result  <- Future
                      .successful(added)
                      .flatMap[Done](add =>
-                       if (add)
+                       if (add && isIncreasing(current, measurement))
                          Future.sequence(
                            AllCountersOn.map(counterOn =>
-                             counterRepository.addTo(counterOn)(
-                               Adjustment( measurement.sourceId
-                                         , measurement.timestamp
-                                         , measurement.reading - current.flatMap(d => Some(d.value.toLong)).getOrElse(0L))))
-                         ).map(_ => {
-                           system.log.info(s"value added to counters: ${measurement.sourceId}=${added}")
-                         }
-                         ).map(toDone)
+                             counterRepository.addTo(counterOn)(adjustmentFor(current, measurement))
+                         )).map(_ => {
+                           system.log.info(s"value added to counters: $added")
+                         }).map(toDone)
                        else
                          Future.successful(Done)).map(_ => {
-                            system.log.info(s"value added to counters: ${measurement.sourceId}=${added}")
+                            system.log.info(s"value added to counters: $added")
                          }).map(toDone)
-        _       <- Future.successful(system.log.info(s"result: ${measurement.sourceId}=${result}"))
+        _       <- Future.successful(system.log.info(s"processed: $result"))
       } yield result
     }
 
@@ -90,7 +104,7 @@ object MeasurementReceiver {
     // FIXME client protocol/interface, currently only returns a cnf if all adjustments succeed
       inbound
         .as[Update]
-        .fold( errors => throw new RuntimeException(s"Boom: $errors")
+        .fold( errors => throw new RuntimeException(s"boom: $errors")
              , update => Future
                            .sequence(update.measurements.map(measurement => process(measurement)))
                            .map(_ => MeasurementDataCnf(update.messageId.toString)))

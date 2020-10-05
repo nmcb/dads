@@ -10,19 +10,26 @@ import akka._
 import akka.actor.typed._
 import akka.stream.alpakka.cassandra._
 import akka.stream.alpakka.cassandra.scaladsl._
+
 import com.datastax.oss.driver.api.core.cql._
 import com.datastax.oss.driver.api.core.metadata.schema._
 import com.datastax.oss.driver.api.querybuilder._
-import dads.v1.DadsSettings.RepositorySettings
 
 import scala.collection._
 import scala.collection.concurrent._
 import scala.concurrent._
+
 import transport._
 
 object RealTimeDecimalRepository {
 
-  case class Decimal(sourceId: SourceId, instant: Instant, value: BigDecimal)
+  import DadsSettings.RepositorySettings
+
+  case class Decimal(sourceId: SourceId, instant: Instant, value: BigDecimal) {
+
+    def +(that: Decimal): Decimal =
+      this.copy(value = that.value)
+  }
 
   object Decimal {
 
@@ -31,10 +38,11 @@ object RealTimeDecimalRepository {
              , instant  = measurement.timestamp
              , value    = measurement.reading
              )
+
+    implicit val decimalInstantDescendingOrdering: Ordering[Decimal] =
+      (lhs, rhs) => lhs.instant.compareTo(rhs.instant)
   }
 
-  implicit val decimalInstantDescendingOrdering: Ordering[Decimal] =
-    (lhs, rhs) => lhs.instant.compareTo(rhs.instant)
 
   def cassandra(settings: RepositorySettings)(implicit system: ActorSystem[_]): RealTimeDecimalRepository =
     new RealTimeDecimalRepository {
@@ -62,7 +70,7 @@ object RealTimeDecimalRepository {
           .column(SourceIdColumn)
           .column(InstantIdColumn)
           .column(ValueColumn)
-          .whereColumn(SourceIdColumn).isEqualTo(literal(sourceId))
+          .whereColumn(SourceIdColumn).isEqualTo(literal(sourceId.uuid))
           .orderBy(InstantIdColumn, ClusteringOrder.DESC)
           .build()
           .selectSeqAsync()
@@ -77,7 +85,7 @@ object RealTimeDecimalRepository {
         update(settings.realtimeKeyspace, RealTimeDecimalTable)
           .usingTtl(DadsSettings.RealTimeToLive.toSeconds.toInt)
           .setColumn(ValueColumn, literal(decimal.value.toLong))
-          .whereColumn(SourceIdColumn).isEqualTo(literal(decimal.sourceId))
+          .whereColumn(SourceIdColumn).isEqualTo(literal(decimal.sourceId.uuid))
           .whereColumn(InstantIdColumn).isEqualTo(literal(decimal.instant.toEpochMilli))
           .build()
           .updateAsync()
@@ -88,7 +96,7 @@ object RealTimeDecimalRepository {
 
       private def toDecimals(rs: Seq[Row]): Seq[Decimal] =
         rs.map(r =>
-          Decimal( r.getUuid(SourceIdColumn)
+          Decimal( r.getUuid(SourceIdColumn).toSourceId
                  , r.getInstant(InstantIdColumn)
                  , r.getBigDecimal(ValueColumn)
                  ))

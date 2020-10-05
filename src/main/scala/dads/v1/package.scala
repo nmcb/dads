@@ -4,6 +4,8 @@
 
 package dads
 
+import java.util
+
 package object v1 {
 
   def NameSpaced(name: String): Array[Byte] =
@@ -15,15 +17,25 @@ package object v1 {
   type MessageId = UUID
 
   object MessageId {
-    def fromString(string: String): SourceId =
+    def fromString(string: String): MessageId =
       UUID.fromString(string)
   }
 
-  type SourceId  = UUID
+  case class SourceId(uuid: UUID) {
+    override def toString: String =
+      uuid.toString
+  }
 
   object SourceId {
+    // TODO we should treat inbound SourceIds as namespaced names, i.e.
+    //      UUID.nameUUIDFromBytes(NameSpaced(name))
     def fromName(name: String): SourceId =
-      UUID.nameUUIDFromBytes(NameSpaced(name))
+      SourceId(UUID.fromString(name))
+  }
+
+  implicit class UUIDOps(uuid: UUID) {
+    def toSourceId =
+      SourceId(uuid)
   }
 
 

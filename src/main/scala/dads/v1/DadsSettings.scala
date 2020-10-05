@@ -12,8 +12,8 @@ import scala.concurrent.duration._
 import com.typesafe.config._
 
 class DadsSettings(config: Config =
-  ConfigFactory.defaultApplication.getConfig("dads"))
-{
+  ConfigFactory.defaultApplication.getConfig("dads").resolve
+){
   import DadsSettings._
 
   lazy val repositorySettings =
@@ -48,7 +48,7 @@ object DadsSettings {
   final val MinDecimalReadingValue = 1L
   final val MaxDecimalReadingValue = 1000L
 
-  final val MinAdjustmentValue = 1L     // FIXME add adjustment input validation subject to unit conversion
+  final val MinAdjustmentValue = -100L     // FIXME add adjustment input validation subject to unit conversion
   final val MaxAdjustmentValue = 1000L
 
   final val MaxCounterSpanSize = 500

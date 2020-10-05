@@ -14,13 +14,11 @@ import data._
 
 object CounterSpanOnCheck
   extends Properties("CounterSpanOn")
-    with RepositoryData
-    with RealTime {
-
-  import CounterRepository._
-  import ArbitraryCounters._
+    with ArbitraryCounters
+{
   import Prop._
   import TypeCheckedTripleEquals._
+  import CounterRepository._
 
   property("apply(instant) should not result in duplicate counter ids") =
     forAll { (instant: Instant, counterSpanOn: CounterSpanOn) =>

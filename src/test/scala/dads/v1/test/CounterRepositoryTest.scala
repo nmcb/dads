@@ -21,18 +21,14 @@ import data._
 
 class CounterRepositoryTest
   extends AsyncFlatSpec
-    with RepositoryData
     with Matchers
     with TimeLimits
     with BeforeAndAfterAll
     with Eventually
-    with RealTime {
-
+    with ArbitraryCounters
+{
   import Arbitrary._
   import CounterRepository._
-  import ArbitraryCounters._
-
-  final val FixtureSize = 100
 
   implicit val system: ActorSystem =
     ActorSystem("CounterRepositoryTestSystem")
@@ -44,7 +40,7 @@ class CounterRepositoryTest
     new DadsSettings().repositorySettings
 
   val fixture: Seq[Adjustment] =
-    Seq.fill(FixtureSize)(arbitrary[Adjustment].sample.get)
+    Seq.fill(1)(arbitrary[Adjustment].sample.get)
 
   def withAdjustments[A](adjustments: Seq[Adjustment])(f: Adjustment => Future[A]): Future[Seq[A]] =
     Future.sequence(adjustments.map(f))
@@ -73,7 +69,7 @@ class CounterRepositoryTest
         }
     }
 
-    eventually {
+    eventually{
       Future.sequence(
         Seq( tripRoundWith(CounterOn.HourByDayCounterOn)
            , tripRoundWith(CounterOn.DayByMonthCounterOn)
@@ -81,7 +77,7 @@ class CounterRepositoryTest
            , tripRoundWith(CounterOn.WeekByYearCounterOn)
            , tripRoundWith(CounterOn.YearCounterOn))
           .map(tripRoundWith => tripRoundWith(fixture))
-          .map(tripRoundWithAll => tripRoundWithAll(futureNow()))
+          .map(tripRoundWithAll => tripRoundWithAll(realNow)) // TODO future ?
       ).map(toSucceeded)
     }
   }

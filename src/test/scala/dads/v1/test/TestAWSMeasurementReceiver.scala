@@ -2,28 +2,35 @@
  * This is free and unencumbered software released into the public domain.
  */
 
-package dads.v1.test
+package dads.v1
+package test
 
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.Behaviors
-import akka.grpc.GrpcClientSettings
-import dads.v1.test.data.MeasurementReceiverData
-import dads.v1.{DadsSettings, RealTime}
-import dads.v1.transport.grpc.v1.{MeasurementDataCnf, MeasurementDataInd, MeasurementServiceClient}
-import org.scalacheck.Arbitrary.arbitrary
+import scala.concurrent._
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import akka.actor.typed._
+import akka.actor.typed.scaladsl._
+import akka.grpc._
 
-object TestAWSMeasurementReceiver extends App with RealTime with MeasurementReceiverData {
+import org.scalacheck._
 
-  import ArbitraryRequests._
+import scala.util._
+
+import data._
+import transport._
+import grpc.v1._
+
+object TestAWSMeasurementReceiver
+  extends App
+    with RealTime
+    with ArbitraryRequests
+{
+  import Arbitrary._
 
   val Host = "aurum-app-load-balancer-4747366a6255f45e.elb.eu-central-1.amazonaws.com"
   val Port = 8080
 
   implicit val clientSystem: ActorSystem[_] =
-    ActorSystem(Behaviors.empty, "MeasurementServiceClient")
+    ActorSystem(Behaviors.empty, "TestAWSMeasurementReceiver")
 
   implicit val ec: ExecutionContext =
     clientSystem.executionContext
@@ -38,6 +45,7 @@ object TestAWSMeasurementReceiver extends App with RealTime with MeasurementRece
     arbitrary[MeasurementDataInd].sample.getOrElse(throw new RuntimeException("booms"))
 
   println(s"Testing with new messages: ${indication.messageId}-${indication}")
+
   val task: Future[MeasurementDataCnf] =
     client.process(indication)
 

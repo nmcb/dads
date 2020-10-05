@@ -59,8 +59,8 @@ object CounterRepository {
         val counter = counterOn(adjustment.instant)
 
         update(settings.counterKeyspace, counter.bucket.tableName)
-          .increment(CounterValueColumn, literal(adjustment.value))
-          .whereColumn(SourceIdColumn).isEqualTo(literal(adjustment.sourceId))
+          .increment(CounterValueColumn, literal(adjustment.value.toLong))
+          .whereColumn(SourceIdColumn).isEqualTo(literal(adjustment.sourceId.uuid))
           .whereColumn(MajorInstantIdColumn).isEqualTo(literal(counter.majorInstant.toEpochMilli))
           .whereColumn(MinorInstantIdColumn).isEqualTo(literal(counter.minorInstant.toEpochMilli))
           .build()
@@ -75,7 +75,7 @@ object CounterRepository {
           .column(SourceIdColumn)
           .column(MajorInstantIdColumn)
           .column(MinorInstantIdColumn)
-          .whereColumn(SourceIdColumn).isEqualTo(literal(sourceId))
+          .whereColumn(SourceIdColumn).isEqualTo(literal(sourceId.uuid))
           .whereColumn(MajorInstantIdColumn).isEqualTo(literal(counter.majorInstant.toEpochMilli))
           .whereColumn(MinorInstantIdColumn).isEqualTo(literal(counter.minorInstant.toEpochMilli))
           .build()
@@ -100,7 +100,7 @@ object CounterRepository {
           .column(SourceIdColumn)
           .column(MajorInstantIdColumn)
           .column(MinorInstantIdColumn)
-          .whereColumn(SourceIdColumn).isEqualTo(literal(sourceId))
+          .whereColumn(SourceIdColumn).isEqualTo(literal(sourceId.uuid))
           .whereColumn(MajorInstantIdColumn).in(majorInstants)
           .whereColumn(MinorInstantIdColumn).in(minorInstants)
           .build()
@@ -117,7 +117,7 @@ object CounterRepository {
 
   case class Adjustment( sourceId : SourceId
                        , instant  : Instant
-                       , value    : Long
+                       , value    : BigDecimal
                        ) {
 //     FIXME enable, currently triggers under certain conditions
 //     require(value >= 0, "value must be positive")
