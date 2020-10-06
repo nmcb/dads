@@ -47,10 +47,12 @@ jobs:
 
     steps:
       - checkout
-      - run: |
-          export NEW_TAG="production-$(date +%Y%m%d%H%M%S)"
-          git tag $NEW_TAG
-          git push origin $NEW_TAG
+      - run:
+          name: Create and push tag
+          command: |
+            export NEW_TAG="production-$(date +%Y%m%d%H%M%S)"
+            git tag $NEW_TAG
+            git push origin $NEW_TAG
 
   deploy_environment:
     machine: true
