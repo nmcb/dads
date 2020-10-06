@@ -16,7 +16,7 @@ jobs:
       - checkout
       - run:
           name: Wait for Cassandra
-          command: sleep 50 && nc -vz localhost 9042
+          command: sleep 20 && nc -vz localhost 9042
       - run:
           name: Cassandra setup
           command: |
