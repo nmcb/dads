@@ -14,7 +14,7 @@ Bucket         : ChronoUnit -> ChronoUnit -> CassandraTable -- Counter identifie
 CounterOn      : Instant    -> Bucket                       -- Counter identifier indirected
 Adjustment     : SourceId   -> Instant    -> Value
 
-CounterAddTo   : CounterOn -> Adjustment -> Done               -- Counter mutator verb 
+CounterAddTo   : CounterOn -> Adjustment -> Done               -- Counter mutator verb
 CounterGetFrom : CounterOn -> SourceId   -> Instant -> Value   -- Counter accessor verb
 ```
 
@@ -31,7 +31,7 @@ Set         : Number a => a -> Done
 LastGetLast : Number a => Sourceid -> Number a
 ```
 
-Real-time storage is provided in-memory and persistent; latter storage form with a 1 hour TTL. 
+Real-time storage is provided in-memory and persistent; latter storage form with a 1 hour TTL.
 
 ### Publish and Deploy in Development
 
@@ -65,3 +65,7 @@ To deploy the application in development (test production locally) run:
 ```
 % docker-compose -f docker-app.yml up
 ```
+
+### Publish and Deploy in production
+
+Deployment in production is provided automagically. 
