@@ -35,8 +35,10 @@ class RealTimeDecimalRepositoryTest
   val settings: RepositorySettings =
     new DadsSettings().repositorySettings
 
-  val fixture: Seq[Decimal] =
-    Seq.fill(10)(arbitrary[Decimal].sample.get).sorted
+  val fixture: Seq[Decimal] = {
+    // FIXME the worm at the core
+    Seq.fill(1)(arbitrary[Decimal].sample.get).sorted
+  }
 
   val realTimeDecimalRepository: RealTimeDecimalRepository =
     RealTimeDecimalRepository.cassandra(settings)(system.toTyped)

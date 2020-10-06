@@ -35,7 +35,7 @@ Real-time storage is provided in-memory and persistent; latter storage form with
 
 ### Publish and Deploy in Development
 
-To develop, start a local development environment:
+To develop from within sbt, start a local development environment outside:
 
 ```
 % docker-compose -f docker-dev.yml up
@@ -48,7 +48,7 @@ To initialise cassandra for local development run:
 % cqlsh -f src/main/resources/cassandra/dads.v1.cql
 ```
 
-To test the local codebase against a local development environment:
+To test the development codebase against a local development environment:
 
 ```
 % sbt test
@@ -64,22 +64,4 @@ To deploy the application in development (test production locally) run:
 
 ```
 % docker-compose -f docker-app.yml up
-```
-
-### Publish and Deploy in Production
-
-**FIXME outdated**
-
-To initialise cassandra for application production run:
-
-```
-% cqlsh -f src/main/resources/cassandra/initialise.prd.cql
-% cqlsh -f src/main/resources/cassandra/dads.v1.cql
-```
-
-To deploy in production run:
-
-```
-% sbt docker:publishLocal
-% docker-compose docker-prd.yml up
 ```

@@ -9,3 +9,8 @@ services:
       - '8080:8080'
     volumes:
       - ./target/:/var/log/:rw
+  cassandra:
+    container_name: cassandra
+    image: cassandra:latest
+    ports:
+      - '9042:9042'
