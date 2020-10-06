@@ -54,7 +54,7 @@ To test the development codebase against a local development environment:
 % sbt test
 ```
 
-To publish local to your development environment run:
+To generate a Docker image in your development machine run:
 
 ```
 % sbt docker:publishLocal
