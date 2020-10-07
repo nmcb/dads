@@ -4,7 +4,7 @@
 
 package dads.v1
 
-import scala.concurrent.Future
+import scala.concurrent._
 
 trait Repository {
 

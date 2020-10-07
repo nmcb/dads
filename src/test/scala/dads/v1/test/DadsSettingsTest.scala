@@ -5,7 +5,8 @@
 package dads.v1
 package test
 
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config._
+
 import org.scalatest.flatspec._
 import org.scalatest.matchers.should._
 

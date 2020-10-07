@@ -2,18 +2,21 @@
  * This is free and unencumbered software released into the public domain.
  */
 
-package dads.v1.test.data
+package dads.v1
+package test
+package data
 
-import dads.v1.DadsSettings._
-import dads.v1.{RealTimeDecimalRepository, SourceId}
 import org.scalacheck._
-import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.Gen.choose
 
 trait ArbitraryDecimals
-  extends RealTime
-  with ArbitrarySources
+  extends ArbitrarySources
+  with RealTime
 {
+  import Gen._
+  import Arbitrary._
+
+  import DadsSettings._
+
   import RealTimeDecimalRepository._
 
   implicit val arbitraryDecimal: Arbitrary[Decimal] =

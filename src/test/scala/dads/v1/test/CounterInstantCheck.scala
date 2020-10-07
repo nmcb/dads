@@ -7,8 +7,9 @@ package test
 
 import java.time.temporal._
 
-import dads.v1.test.data.ArbitraryCounters
 import org.scalacheck._
+
+import data._
 
 object CounterInstantCheck
   extends Properties("CounterInstant")

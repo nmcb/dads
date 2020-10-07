@@ -2,21 +2,24 @@
  * This is free and unencumbered software released into the public domain.
  */
 
-package dads.v1.test.data
+package dads.v1
+package test
+package data
 
 import java.util._
 
-import dads.v1.transport.grpc.v1._
-import dads.v1.{DadsSettings, SourceId}
 import org.scalacheck._
-import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.Gen.{choose, listOfN}
 
 trait ArbitraryRequests
-  extends RealTime
-  with ArbitrarySources
+  extends ArbitrarySources
+  with RealTime
 {
+  import Gen._
+  import Arbitrary._
   import DadsSettings._
+
+  import transport._
+  import grpc.v1._
 
   implicit val arbitraryMultiTypeValueDecimal: Arbitrary[MultiType.Value.Decimal] =
     Arbitrary(

@@ -4,8 +4,6 @@
 
 package dads
 
-import java.util
-
 package object v1 {
 
   def NameSpaced(name: String): Array[Byte] =
@@ -37,7 +35,6 @@ package object v1 {
     def toSourceId =
       SourceId(uuid)
   }
-
 
   // TODO squants
   type NaturalUnit = String

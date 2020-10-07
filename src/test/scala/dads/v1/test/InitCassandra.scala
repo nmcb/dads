@@ -7,9 +7,11 @@ package test
 
 import akka._
 import akka.actor.typed._
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl._
+
 import akka.stream.alpakka.cassandra._
 import akka.stream.alpakka.cassandra.scaladsl._
+
 import com.typesafe.config._
 
 import scala.concurrent._

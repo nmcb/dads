@@ -6,29 +6,29 @@ package dads.v1
 package test
 package data
 
+import java.time._
+import java.time.temporal._
+
+import scala.jdk._
+import scala.util._
+import scala.concurrent.duration._
+
+import org.scalacheck._
+
 import org.scalatest.concurrent._
+import org.scalatest.time._
 
-trait RealTime extends PatienceConfiguration {
-
-  import java.time._
-  import java.time.temporal._
+trait RealTime
+  extends PatienceConfiguration
+{
   import ChronoUnit._
-  import java.util.UUID
 
-  import org.scalatest.time._
   import Span._
-  import org.scalacheck._
-  import Arbitrary._
   import Gen._
 
-  import scala.concurrent.duration._
-  import scala.jdk._
   import DurationConverters._
 
-  import scala.util._
   import DadsSettings._
-
-  // TIME
 
   override final implicit val patienceConfig: PatienceConfig =
     PatienceConfig(RealTimeServiceLevelAgreement.toSpan

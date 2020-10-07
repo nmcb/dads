@@ -2,20 +2,23 @@
  * This is free and unencumbered software released into the public domain.
  */
 
-package dads.v1.test.data
+package dads.v1
+package test
+package data
 
 import java.time._
 
-import dads.v1.DadsSettings._
-import dads.v1.{CounterRepository, SourceId}
 import org.scalacheck._
-import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.Gen.{choose, oneOf}
 
 trait ArbitraryCounters
-  extends RealTime
-  with ArbitrarySources
+  extends ArbitrarySources
+  with RealTime
 {
+  import Gen._
+  import Arbitrary._
+
+  import DadsSettings._
+
   import CounterRepository._
   import CounterOn._
   import CounterSpanOn._

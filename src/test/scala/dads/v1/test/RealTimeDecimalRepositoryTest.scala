@@ -5,16 +5,18 @@
 package dads.v1
 package test
 
-import akka.Done
+import scala.concurrent._
+
+import akka._
 import akka.actor._
 import akka.actor.typed.scaladsl.adapter._
+
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.concurrent._
 import org.scalatest.flatspec._
 import org.scalatest.matchers.should._
 
-import scala.concurrent._
 import data._
 
 class RealTimeDecimalRepositoryTest
@@ -27,7 +29,7 @@ class RealTimeDecimalRepositoryTest
 {
   import Arbitrary._
   import RealTimeDecimalRepository._
-  import DadsSettings.RepositorySettings
+  import DadsSettings._
 
   implicit val system: ActorSystem =
     ActorSystem("RealTimeDecimalRepositoryTestSystem")

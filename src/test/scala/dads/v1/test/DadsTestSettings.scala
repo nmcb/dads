@@ -7,8 +7,7 @@ package test
 
 import com.typesafe.config._
 
-class DadsTestSettings(config: Config =
-       ConfigFactory.defaultApplication.getConfig("dads").resolve)
+class DadsTestSettings(config: Config = ConfigFactory.defaultApplication.getConfig("dads").resolve)
   extends DadsSettings(config)
 {
   override lazy val measurementReceiver: DadsSettings.ReceiverSettings =
