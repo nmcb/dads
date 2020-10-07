@@ -26,8 +26,7 @@ object TestAWSMeasurementReceiver
 {
   import Arbitrary._
 
-  val Host = "0.0.0.0"
-//  val Host = "aurum-app-load-balancer-4747366a6255f45e.elb.eu-central-1.amazonaws.com"
+  val Host = "aurum-app-load-balancer-4747366a6255f45e.elb.eu-central-1.amazonaws.com"
   val Port = 8080
 
   implicit val clientSystem: ActorSystem[_] =
