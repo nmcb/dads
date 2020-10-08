@@ -18,5 +18,4 @@ object Options {
        , "-Xlint:nullary-unit"
        , "-Wdead-code"
        )
-
 }

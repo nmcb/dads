@@ -5,6 +5,10 @@
 
 <configuration>
 
+<!--    TODO suppress info's ?                  -->
+<!--    - akka.event.slf4j                      -->
+<!--    - com.datastax.oss.driver.internal.core -->
+
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg%n</pattern>
@@ -15,10 +19,10 @@
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>dads.log</file>
+        <file>/var/log/dads.log</file>
         <immediateFlush>true</immediateFlush>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>dads_%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>/var/log/dads_%d{yyyy-MM-dd}.log</fileNamePattern>
         </rollingPolicy>
         <encoder>
             <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg%n</pattern>

@@ -1,0 +1,119 @@
+version: 2
+jobs:
+  test-build:
+    docker:
+      - image: circleci/openjdk:11-buster
+        environment:
+          SBT_VERSION: 1.3.10
+
+      - image: cassandra:3.11.8
+        environment:
+          MAX_HEAP_SIZE: 1024m
+          HEAP_NEWSIZE: 512m
+          CASSANDRA_LISTEN_ADDRESS: 127.0.0.1
+
+    steps:
+      - checkout
+      - run:
+          name: Wait for Cassandra
+          command: sleep 20 && nc -vz localhost 9042
+      - run:
+          name: Cassandra setup
+          command: |
+            sudo apt update && sudo apt install -y python-pip && pip install cqlsh
+            cqlsh -f src/main/resources/cassandra/initialise.dev.cql --cqlversion="3.4.4"
+            cqlsh -f src/main/resources/cassandra/dads.v1.cql --cqlversion="3.4.4"
+      - run:
+          name: Download SBT
+          command: |
+            sudo apt install -y wget
+            sudo wget https://dl.bintray.com/sbt/debian/sbt-$SBT_VERSION.deb -O sbt-$SBT_VERSION.deb
+            sudo dpkg -i sbt-$SBT_VERSION.deb
+            sudo apt update && sudo apt install openjdk-11-jdk sbt
+      - restore_cache:
+          key: sbt-cache
+      - run:
+          name: Test Suite
+          command: sbt test
+      - save_cache:
+          key: sbt-cache
+          paths:
+            - "~/.ivy2/cache"
+            - "~/.sbt"
+            - "~/.m2"
+
+  tag_deployment:
+    machine: true
+
+    steps:
+      - checkout
+      - run:
+          name: Create and push tag
+          command: |
+            export NEW_TAG="production-$(date +%Y%m%d%H%M%S)"
+            git tag $NEW_TAG
+            git push origin $NEW_TAG
+
+  deploy_environment:
+    machine: true 
+    environment:
+      SBT_VERSION: 1.3.10
+
+    steps:
+      - checkout
+      - run: sudo apt update && sudo apt install -y python-pip curl wget && pip install awscli
+      - run: echo 'export PATH=$PATH:/home/circleci/.local/bin/' >> $BASH_ENV
+      - run: aws configure set aws_access_key_id ${ECR_ACCESS_KEY}
+      - run: aws configure set aws_secret_access_key ${ECR_SECRET_KEY}
+      - run: $(aws ecr get-login --region eu-central-1 --no-include-email)
+      - run:
+          name: Download SBT
+          command: |
+            sudo wget https://dl.bintray.com/sbt/debian/sbt-$SBT_VERSION.deb -O sbt-$SBT_VERSION.deb
+            sudo dpkg -i sbt-$SBT_VERSION.deb
+            sudo apt update && sudo apt install openjdk-11-jdk sbt
+      - restore_cache:
+          key: sbt-cache
+      - run: sbt docker:publishLocal
+      - save_cache:
+          key: sbt-cache
+          paths:
+            - "~/.ivy2/cache"
+            - "~/.sbt"
+            - "~/.m2"
+      - run: echo 'export IMAGE_NAME=${ECR_ENDPOINT}/dads' >> $BASH_ENV
+      - run: docker tag dads/dads:latest $IMAGE_NAME:${CIRCLE_TAG}
+      - run: docker push $IMAGE_NAME:${CIRCLE_TAG}
+      - run: |
+          sleep 5 && curl -X POST ${DEPLOYER_ENDPOINT} \
+          -H "Content-Type: application/json" \
+          -H "X-Deployer-Auth: MarcoRocks" \
+          -d "{\"serviceName\": \"dads_dads\", \"imageName\": \"$IMAGE_NAME:${CIRCLE_TAG}\", \"tag\": { \"tag\": \"${CIRCLE_TAG}\", \"commit\": { \"hash\": \"${CIRCLE_SHA1}\", \"author\": { \"name\": \"${CIRCLE_USERNAME}\", \"email\": \"\" } } } }"
+
+
+workflows:
+  version: 2
+  build-and-test:
+    jobs:
+      - test-build:
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /(stage|production)-.*/
+
+      - tag_deployment:
+          requires:
+            - test-build
+          filters:
+            branches:
+              only:
+                - master
+
+      - deploy_environment:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only:
+                - /(stage|production)-.*/

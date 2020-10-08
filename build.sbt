@@ -1,9 +1,13 @@
+/*
+ * This is free and unencumbered software released into the public domain.
+ */
+
 import Options._
 import Dependencies._
 import Workarounds._
 
 ThisBuild / scalaVersion     := "2.13.3"
-ThisBuild / version          := "0.0.1-SNAPSHOT"
+ThisBuild / version          := "0.1.1"
 ThisBuild / organization     := "nmcb"
 ThisBuild / organizationName := "nmcb"
 
@@ -12,14 +16,29 @@ lazy val dads =
     .configs(IntegrationTest)
     .enablePlugins(AkkaGrpcPlugin, JavaAppPackaging)
     .settings( name                := "dads"
-             , libraryDependencies ++= platformDeps ++ monitoringDeps ++ testDeps ++ bumpGrpcDeps
+
+             , libraryDependencies ++= Seq( platformDeps
+                                          , monitoringDeps
+                                          , explicateAkkaGrpcDeps
+                                          , explicateAkkaRuntimeDeps
+                                          , testDeps
+                                          ).flatten
+
              , scalacOptions       ++= hygienicScalacOps
              , Defaults.itSettings
              , onPublishMaskDocumentation
-             , addCompilerPlugin(KindProjectorPlugin)
+             , addCompilerPlugin(KindProjector)
              )
 
-dockerRepository              := Some("nmcb")
+// FIXME Pending https://github.com/sbt/sbt/issues/5008
+evictionWarningOptions in update :=
+  EvictionWarningOptions
+    .default
+    .withWarnTransitiveEvictions(false)
+    .withWarnDirectEvictions(false)
+    .withWarnScalaVersionEviction(false)
+
+dockerRepository              := Some("dads")
 dockerBaseImage               := "java"
 version            in Docker  := "latest"
 dockerExposedPorts in Docker  := Seq(8080)
