@@ -205,8 +205,8 @@ object CounterRepository {
     def apply(chronoUnit: ChronoUnit, byChronoUnit: ChronoUnit)(bucket: Bucket)(size: Int): CounterSpanOn =
       CounterSpanOn(bucket, start => unroll(size, start, CounterOn(chronoUnit, byChronoUnit)(bucket)))
 
-    private def unroll(size: Int, start: Instant, counterOn: CounterOn) = {
-      require(size > 0, "size must be a positive integer")
+    private def unroll(size: Int, start: Instant, counterOn: CounterOn): Seq[Counter] = {
+      require(size > 0, "larger than zero")
 
       @scala.annotation.tailrec
       def loop(before: Instant, accumulator: Vector[Counter]): Seq[Counter] =

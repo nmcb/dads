@@ -20,13 +20,13 @@ object CounterSpanOnCheck
   import TypeCheckedTripleEquals._
   import CounterRepository._
 
-  property("apply(instant) should not result in duplicate counter ids") =
+  property("apply(instant) should not result in duplicate counters") =
     forAll { (instant: Instant, counterSpanOn: CounterSpanOn) =>
       val counterSpan = counterSpanOn(instant)
       counterSpan.length === counterSpan.toSet.size
     }
 
-  property("apply(instant) should return counter instants sorted descending by minor instant") =
+  property("apply(instant) should return counters sorted descending by minor instant") =
     forAll { (instant: Instant, counterSpanOn: CounterSpanOn) =>
       val counterSpan = counterSpanOn(instant)
       counterSpan === counterSpan.sorted(Counter.descendingCounterOrder)

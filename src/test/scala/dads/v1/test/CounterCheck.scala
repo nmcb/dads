@@ -11,8 +11,8 @@ import org.scalacheck._
 
 import data._
 
-object CounterInstantCheck
-  extends Properties("CounterInstant")
+object CounterCheck
+  extends Properties("Counter")
   with ArbitraryCounters
 {
   import Prop._
@@ -30,17 +30,17 @@ object CounterInstantCheck
     }
 
   property("majorInstant truncates string representation") =
-    forAll { (counterInstant: Counter) =>
-      counterInstant.majorInstant.toString endsWith truncation(counterInstant.majorChronoUnit)
+    forAll { (counter: Counter) =>
+      counter.majorInstant.toString endsWith truncation(counter.majorChronoUnit)
     }
 
   property("minorInstant truncates string representation") =
-    forAll { (counterInstant: Counter) =>
-      counterInstant.minorInstant.toString endsWith truncation(counterInstant.minorChronoUnit)
+    forAll { (counter: Counter) =>
+      counter.minorInstant.toString endsWith truncation(counter.minorChronoUnit)
     }
 
   property("prevMinorInstant <= minorInstant relative to the epoch") =
-    forAll { (counterInstant: Counter) =>
-      counterInstant.prevMinorInstant.toEpochMilli <= counterInstant.minorInstant.toEpochMilli
+    forAll { (counter: Counter) =>
+      counter.prevMinorInstant.toEpochMilli <= counter.minorInstant.toEpochMilli
     }
 }

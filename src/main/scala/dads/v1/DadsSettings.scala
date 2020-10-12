@@ -45,9 +45,11 @@ object DadsSettings {
   final val MaxSourceIdsPerIndication  = 5
   final val MaxMeasurementsPerSourceId = 5
 
+  // FIXME squants
   final val MinDecimalReadingValue = 1L
   final val MaxDecimalReadingValue = 1000L
 
+  // FIXME squants
   final val MinAdjustmentValue = -100L     // FIXME add adjustment input validation subject to unit conversion
   final val MaxAdjustmentValue = 1000L
 

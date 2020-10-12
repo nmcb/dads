@@ -19,7 +19,7 @@ trait ArbitrarySources {
 
   implicit val arbitrarySourceId: Arbitrary[SourceId] =
     Arbitrary {
-      if (Random.nextGaussian().abs < 0.0)
+      if (Random.nextGaussian().abs > 1.0)
         arbitrary[UUID].map(_.toSourceId)
       else
         oneOf(Seq( "bf84271c-8d9b-4bca-a7ac-004af7b064cc"
