@@ -153,8 +153,8 @@ object CounterRepository {
     private[this] def withRepositoryOffsetTruncatedToDays(adjuster: TemporalAdjuster)(instant: Instant): Instant =
       instant.atZone(TimeZoneOfRepositoryOffset).truncatedTo(DAYS).`with`(adjuster).toInstant
 
-    /** Descending towards the past by `CounterInstant.minorInstant`. */
-    implicit val counterInstantDescendingOrder: Ordering[Counter] =
+    /** Descending towards the past by `Counter.minorInstant`. */
+    implicit val descendingCounterOrder: Ordering[Counter] =
       (x: Counter, y: Counter) => y.minorInstant.compareTo(x.minorInstant)
   }
 
@@ -169,7 +169,7 @@ object CounterRepository {
                         , minorInstant    = truncatedTo(chronoUnit)(instant)
                         , majorChronoUnit = byChronoUnit
                         , minorChronoUnit = chronoUnit
-                        , bucket = bucket
+                        , bucket          = bucket
                         )
 
     val HourByDayCounterOn: CounterOn =
@@ -189,7 +189,7 @@ object CounterRepository {
                         , minorInstant    = truncatedTo(YEARS)(instant)
                         , majorChronoUnit = FOREVER
                         , minorChronoUnit = YEARS
-                        , bucket = Year
+                        , bucket          = Year
                         )
   }
 
