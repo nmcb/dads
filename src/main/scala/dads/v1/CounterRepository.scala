@@ -138,8 +138,6 @@ object CounterRepository {
 
   object Counter {
 
-    val SampleFactor = 3
-
     def truncatedTo(chronoUnit: ChronoUnit)(instant: Instant): Instant =
       chronoUnit match {
         case FOREVER => Instant.EPOCH
