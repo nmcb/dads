@@ -7,10 +7,11 @@ package transport
 
 import java.time._
 
+import squants.energy._
+
 case class Measurement( sourceId  : SourceId
                       , timestamp : Instant
-                      , reading   : Long
-                      , unit      : NaturalUnit
+                      , reading   : Power
                       ) extends ProtoBuffed
 
 object Measurement {

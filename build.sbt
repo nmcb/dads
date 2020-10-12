@@ -18,6 +18,7 @@ lazy val dads =
     .settings( name                := "dads"
 
              , libraryDependencies ++= Seq( platformDeps
+                                          , libraryDeps
                                           , monitoringDeps
                                           , explicateAkkaGrpcDeps
                                           , explicateAkkaRuntimeDeps

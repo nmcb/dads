@@ -9,7 +9,7 @@ import java.time._
 
 import scala.util._
 import cats.implicits._
-
+import squants.energy.Power
 import transport.grpc.v1._
 
 
@@ -20,11 +20,13 @@ trait Codec[M <: scalapb.GeneratedMessage, A] {
 
 object Codec {
 
+  val PowerUnits = Seq("GW","kW","W","mW")
+
   import DadsSettings._
 
   case object NoMessageId          extends InboundError("No valid (UUID) messageId")
   case object NoSourceId           extends InboundError("No valid (UUID) sourceId")
-  case object NoUnitOfMeasurement  extends InboundError("No valid (kW) unit of measurement")
+  case object NoUnitOfMeasurement  extends InboundError("No valid unit of measurement")
   case object NoDecimalValue       extends InboundError("No (decimal) value present")
   case object NotPositive          extends InboundError("No positive (decimal) value")
   case object NoValidInstant       extends InboundError("No valid instant")
@@ -46,8 +48,10 @@ object Codec {
     Try(SourceId.fromName(sourceId)).fold(_ => NoSourceId.invalidNec, _.validNec)
 
   def validateUnit(unit: String): Val[String] = {
-    // TODO squants
-    if (unit != "kW") NoUnitOfMeasurement.invalidNec else unit.validNec
+    if (PowerUnits.contains(unit))
+      unit.validNec
+    else
+      NoUnitOfMeasurement.invalidNec
   }
 
   def validateSeqNr(seqNr: Int): Val[Int] =
@@ -77,9 +81,16 @@ object Codec {
     ).sequence[Val,(Instant,Long)]
 
   def validateMeasurementData(measurementData: MeasurementData): Val[Seq[Measurement]] = {
+    // FIXME inline and validate
+    def convert(value: Long, unit: String): Power =
+      Power.parseTuple((value, unit)) match {
+        case Success(power) => power
+        case Failure(e)     => throw new RuntimeException("boom", e)
+      }
+
     def rollout(sourceId: SourceId, unit: String)(values: Seq[(Instant, Long)]): Seq[Measurement] =
       values.map { case (instant, reading) =>
-        Measurement(sourceId, instant, reading, unit)
+        Measurement(sourceId, instant, convert(reading, unit))
       }
 
     ( validateSourceId(measurementData.sourceId)

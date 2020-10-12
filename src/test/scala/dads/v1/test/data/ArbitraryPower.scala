@@ -6,9 +6,12 @@ package dads.v1
 package test
 package data
 
+import dads.v1.transport.Codec
 import org.scalacheck._
 
-trait ArbitraryDecimals
+import squants.energy._
+
+trait ArbitraryPower
   extends ArbitrarySources
   with RealTime
 {
@@ -17,13 +20,15 @@ trait ArbitraryDecimals
 
   import DadsSettings._
 
-  import RealTimeDecimalRepository._
+  import RealTimePowerRepository._
 
-  implicit val arbitraryDecimal: Arbitrary[Decimal] =
+  implicit val arbitraryDecimal: Arbitrary[PowerAttribution] =
     Arbitrary {
       for {
         sourceId <- arbitrary[SourceId]
         value <- choose(MinDecimalReadingValue, MaxDecimalReadingValue)
-      } yield Decimal(sourceId, pastNow.withUncertainty, value)
+        unit  <- oneOf(Codec.PowerUnits)
+        power <- Gen.const(Power.parseTuple((value, unit))) suchThat(_.isSuccess)
+      } yield PowerAttribution(sourceId, pastNow.withUncertainty, power.get)
     }
 }

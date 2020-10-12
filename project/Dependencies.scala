@@ -12,10 +12,12 @@ object Dependencies {
   val akkaVersion                     = "2.6.9"
   val akkaAlpakkaVersion              = "2.0.1"
   val logbackVersion                  = "1.2.3"
-  val catsCoreVersion                 = "2.1.1"
   val kindProjectorPluginVersion      = "0.11.0"
   val akkaPersistenceCassandraVersion = "1.0.1"
   val datastaxCassandraDriverVersion  = "4.9.0"
+
+  val catsCoreVersion                 = "2.1.1"
+  val typelevelSquantsVersion         = "1.6.0"
 
   val scalaTestVersion  = "3.2.0"
   val scalaCheckVersion = "1.14.1"
@@ -27,7 +29,11 @@ object Dependencies {
        , "com.typesafe.akka"  %% "akka-persistence-cassandra" % akkaPersistenceCassandraVersion
        , "com.datastax.oss"   %  "java-driver-core"           % datastaxCassandraDriverVersion
        , "com.datastax.oss"   %  "java-driver-query-builder"  % datastaxCassandraDriverVersion
-       , "org.typelevel"      %% "cats-core"                  % catsCoreVersion
+       )
+
+  lazy val libraryDeps: Seq[ModuleID] =
+    Seq( "org.typelevel"  %% "cats-core"  % catsCoreVersion
+       , "org.typelevel"  %% "squants"    % typelevelSquantsVersion
        )
 
   lazy val monitoringDeps: Seq[ModuleID] =

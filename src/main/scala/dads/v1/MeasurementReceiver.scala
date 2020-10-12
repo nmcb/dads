@@ -19,7 +19,7 @@ import grpc.v1._
 object MeasurementReceiver {
 
   class DefaultMeasurementService( counterRepository  : CounterRepository
-                                 , realTimeRepository : RealTimeDecimalRepository
+                                 , realTimeRepository : RealTimePowerRepository
   )(
     implicit system: ActorSystem[_]
    )
@@ -30,7 +30,7 @@ object MeasurementReceiver {
 
     import CounterRepository._
     import CounterOn._
-    import RealTimeDecimalRepository._
+    import RealTimePowerRepository._
 
     val AllCountersOn: Seq[CounterOn] =
       Seq( HourByDayCounterOn
@@ -45,16 +45,16 @@ object MeasurementReceiver {
 
     private def process(measurement: Measurement): Future[Done] = {
 
-      def isNewMeasurement(current: Option[Decimal], measurement: Measurement): Boolean = {
-        val res = current.exists(decimal => decimal.instant.isBefore(measurement.timestamp)) || (current.isEmpty && measurement.reading >= 0)
+      def isNewMeasurement(current: Option[PowerAttribution], measurement: Measurement): Boolean = {
+        val res = current.exists(decimal => decimal.instant.isBefore(measurement.timestamp)) || (current.isEmpty && measurement.reading.value >= 0)
         system.log.info(s"new measurement [${res}]")
         res
       }
 
-      def isIncreasing(current: Option[Decimal], measurement: Measurement): Boolean =
+      def isIncreasing(current: Option[PowerAttribution], measurement: Measurement): Boolean =
         current.map(decimal => decimal.value < measurement.reading).getOrElse(true)
 
-      def adjustmentFor(current: Option[Decimal], measurement: Measurement): Adjustment = {
+      def adjustmentFor(current: Option[PowerAttribution], measurement: Measurement): Adjustment = {
         current match {
           case None =>
             Adjustment( measurement.sourceId
@@ -77,7 +77,7 @@ object MeasurementReceiver {
                      .successful(isNewMeasurement(current, measurement))
                      .flatMap(newMeasurement =>
                        if (newMeasurement)
-                         realTimeRepository.set(Decimal.from(measurement)).map(_ => true)
+                         realTimeRepository.set(PowerAttribution.from(measurement)).map(_ => true)
                        else
                          Future.successful(false)
                      )
@@ -114,7 +114,7 @@ object MeasurementReceiver {
   }
 }
 
-class MeasurementReceiver(settings: DadsSettings.ReceiverSettings, counterRepository: CounterRepository, realTimeRepository: RealTimeDecimalRepository)(implicit system: ActorSystem[_]) {
+class MeasurementReceiver(settings: DadsSettings.ReceiverSettings, counterRepository: CounterRepository, realTimeRepository: RealTimePowerRepository)(implicit system: ActorSystem[_]) {
 
   //  TODO system inbound boundary:
   //

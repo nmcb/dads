@@ -41,7 +41,7 @@ class Main(implicit system: ActorSystem[_]) {
     system.log.info("DADS Starting...")
     new MeasurementReceiver( settings.measurementReceiver
                            , CounterRepository(settings.repositorySettings)
-                           , RealTimeDecimalRepository.cassandra(settings.repositorySettings)
+                           , RealTimePowerRepository.cassandra(settings.repositorySettings)
                            ).run()
   }
 }

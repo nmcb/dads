@@ -69,7 +69,8 @@ class CounterRepositoryTest
             before  <- counterRepository.getFrom(counterOn)(adjustment.sourceId)(instant)
             _       <- counterRepository.addTo(counterOn)(adjustment)
             after   <- counterRepository.getFrom(counterOn)(adjustment.sourceId)(instant)
-          } yield assert(after === before + adjustment.value)
+            // TODO adapt to 'power' semantics in counter repositories ?
+          } yield assert(after === before + adjustment.value.toMilliwatts)
         }
     }
 

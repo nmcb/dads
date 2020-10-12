@@ -21,7 +21,6 @@ import grpc.v1._
 
 object TestAWSMeasurementReceiver
   extends App
-    with RealTime
     with ArbitraryRequests
 {
   import Arbitrary._

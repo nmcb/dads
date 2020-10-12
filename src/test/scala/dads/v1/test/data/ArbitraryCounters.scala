@@ -8,11 +8,13 @@ package data
 
 import java.time._
 
+import dads.v1.RealTimePowerRepository.PowerAttribution
+import squants.energy._
 import org.scalacheck._
 
 trait ArbitraryCounters
   extends ArbitrarySources
-  with RealTime
+  with ArbitraryPower
 {
   import Gen._
   import Arbitrary._
@@ -57,7 +59,7 @@ trait ArbitraryCounters
     Arbitrary {
       for {
         sourceId <- arbitrary[SourceId]
-        value <- choose(MinAdjustmentValue, MaxAdjustmentValue)
-      } yield Adjustment(sourceId, realNow, value)
+        power    <- arbitrary[PowerAttribution]
+      } yield Adjustment(sourceId, realNow, power.value)
     }
 }

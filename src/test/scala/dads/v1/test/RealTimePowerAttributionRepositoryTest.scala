@@ -6,29 +6,27 @@ package dads.v1
 package test
 
 import scala.concurrent._
-
 import akka._
 import akka.actor._
 import akka.actor.typed.scaladsl.adapter._
-
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.concurrent._
 import org.scalatest.flatspec._
 import org.scalatest.matchers.should._
-
 import data._
+import squants.energy.Power
 
-class RealTimeDecimalRepositoryTest
+class RealTimePowerAttributionRepositoryTest
   extends AsyncFlatSpec
     with Matchers
     with TimeLimits
     with BeforeAndAfterAll
     with Eventually
-    with ArbitraryDecimals
+    with ArbitraryPower
 {
   import Arbitrary._
-  import RealTimeDecimalRepository._
+  import RealTimePowerRepository._
   import DadsSettings._
 
   implicit val system: ActorSystem =
@@ -37,13 +35,13 @@ class RealTimeDecimalRepositoryTest
   val settings: RepositorySettings =
     new DadsSettings().repositorySettings
 
-  val fixture: Seq[Decimal] = {
+  val fixture: Seq[PowerAttribution] = {
     // FIXME the worm at the core
-    Seq.fill(1)(arbitrary[Decimal].sample.get).sorted
+    Seq.fill(1)(arbitrary[PowerAttribution].sample.get).sorted
   }
 
-  val realTimeDecimalRepository: RealTimeDecimalRepository =
-    RealTimeDecimalRepository.cassandra(settings)(system.toTyped)
+  val realTimeDecimalRepository: RealTimePowerRepository =
+    RealTimePowerRepository.cassandra(settings)(system.toTyped)
 
   override def afterAll(): Unit = {
     super.afterAll()
@@ -54,7 +52,7 @@ class RealTimeDecimalRepositoryTest
 
   it should "update all decimals in set/getLast round-trip" in {
 
-    val expectedResults: Map[SourceId,BigDecimal] =
+    val expectedResults: Map[SourceId,Power] =
       fixture.groupBy(_.sourceId).map {
         case (sourceId, readings) => sourceId -> readings.map(_.value).max
       }

@@ -17,6 +17,8 @@ import com.datastax.oss.driver.api.core.cql._
 import com.datastax.oss.driver.api.querybuilder._
 import com.datastax.oss.driver.api.querybuilder.term._
 
+import squants.energy._
+
 object CounterRepository {
 
   import temporal._
@@ -59,7 +61,7 @@ object CounterRepository {
         val counter = counterOn(adjustment.instant)
 
         update(settings.counterKeyspace, counter.bucket.tableName)
-          .increment(CounterValueColumn, literal(adjustment.value.toLong))
+          .increment(CounterValueColumn, literal(adjustment.value.toMilliwatts.toLong))
           .whereColumn(SourceIdColumn).isEqualTo(literal(adjustment.sourceId.uuid))
           .whereColumn(MajorInstantIdColumn).isEqualTo(literal(counter.majorInstant.toEpochMilli))
           .whereColumn(MinorInstantIdColumn).isEqualTo(literal(counter.minorInstant.toEpochMilli))
@@ -117,7 +119,7 @@ object CounterRepository {
 
   case class Adjustment( sourceId : SourceId
                        , instant  : Instant
-                       , value    : BigDecimal
+                       , value    : Power
                        ) {
 //     FIXME enable, currently triggers under certain conditions
 //     require(value >= 0, "value must be positive")
