@@ -111,6 +111,8 @@ workflows:
                 - master
 
       - deploy_environment:
+          requires:
+            - test-build
           filters:
             branches:
               ignore: /.*/
