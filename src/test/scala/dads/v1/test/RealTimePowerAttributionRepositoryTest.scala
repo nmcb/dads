@@ -30,7 +30,7 @@ class RealTimePowerAttributionRepositoryTest
   import DadsSettings._
 
   implicit val system: ActorSystem =
-    ActorSystem("RealTimeDecimalRepositoryTestSystem")
+    ActorSystem("RealTimePowerAttributionRepositoryTestSystem")
 
   val settings: RepositorySettings =
     new DadsSettings().repositorySettings
@@ -40,7 +40,7 @@ class RealTimePowerAttributionRepositoryTest
     Seq.fill(1)(arbitrary[PowerAttribution].sample.get).sorted
   }
 
-  val realTimeDecimalRepository: RealTimePowerRepository =
+  val realTimePowerRepository: RealTimePowerRepository =
     RealTimePowerRepository.cassandra(settings)(system.toTyped)
 
   override def afterAll(): Unit = {
@@ -48,26 +48,26 @@ class RealTimePowerAttributionRepositoryTest
     system.terminate()
   }
 
-  behavior of "RealTimeDecimalRepository"
+  behavior of "RealTimePowerRepository"
 
-  it should "update all decimals in set/getLast round-trip" in {
+  it should "update all power attributions in a set/getLast round-trip" in {
 
-    val expectedResults: Map[SourceId,Power] =
+    val expectMaxAttributedPowerResults: Map[SourceId,Power] =
       fixture.groupBy(_.sourceId).map {
         case (sourceId, readings) => sourceId -> readings.map(_.value).max
       }
 
     val inbound: Future[Seq[Done]] =
-      Future.sequence(fixture.map(d => realTimeDecimalRepository.set(d)))
+      Future.sequence(fixture.map(d => realTimePowerRepository.set(d)))
 
     eventually {
       inbound.flatMap(_ =>
         Future.sequence(
-          expectedResults.map {
-            case (sourceId, expectedValue) =>
+          expectMaxAttributedPowerResults.map {
+            case (sourceId, maxAttributedPowerValue) =>
               for {
-                Some(decimal) <- realTimeDecimalRepository.getLast(sourceId)
-              } yield assert(decimal.value === expectedValue, s"sourceId:$sourceId")
+                Some(attribution) <- realTimePowerRepository.getLast(sourceId)
+              } yield assert(attribution.value === maxAttributedPowerValue, s"sourceId:$sourceId")
           }.toSeq
         )
       )
