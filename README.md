@@ -1,4 +1,4 @@
-## DADS (yet another four letter acronym)
+## DADS
 
 Provides for humanly understandable time unit bucketed counter storage.
 
