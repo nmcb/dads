@@ -85,7 +85,7 @@ jobs:
       - run: docker tag dads/dads:latest $IMAGE_NAME:${CIRCLE_TAG}
       - run: docker push $IMAGE_NAME:${CIRCLE_TAG}
       - run: |
-          sleep 5 && curl -X POST ${DEPLOYER_ENDPOINT} \
+          sleep 10 && curl -X POST ${DEPLOYER_ENDPOINT} \
           -H "Content-Type: application/json" \
           -H "X-Deployer-Auth: MarcoRocks" \
           -d "{\"serviceName\": \"dads_dads\", \"imageName\": \"$IMAGE_NAME:${CIRCLE_TAG}\", \"tag\": { \"tag\": \"${CIRCLE_TAG}\", \"commit\": { \"hash\": \"${CIRCLE_SHA1}\", \"author\": { \"name\": \"${CIRCLE_USERNAME}\", \"email\": \"\" } } } }"
@@ -111,6 +111,8 @@ workflows:
                 - master
 
       - deploy_environment:
+          requires:
+            - test-build
           filters:
             branches:
               ignore: /.*/

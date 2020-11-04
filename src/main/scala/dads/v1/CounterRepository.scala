@@ -138,8 +138,6 @@ object CounterRepository {
 
   object Counter {
 
-    val SampleFactor = 3
-
     def truncatedTo(chronoUnit: ChronoUnit)(instant: Instant): Instant =
       chronoUnit match {
         case FOREVER => Instant.EPOCH
@@ -155,8 +153,8 @@ object CounterRepository {
     private[this] def withRepositoryOffsetTruncatedToDays(adjuster: TemporalAdjuster)(instant: Instant): Instant =
       instant.atZone(TimeZoneOfRepositoryOffset).truncatedTo(DAYS).`with`(adjuster).toInstant
 
-    /** Descending towards the past by `CounterInstant.minorInstant`. */
-    implicit val counterInstantDescendingOrder: Ordering[Counter] =
+    /** Descending towards the past by `Counter.minorInstant`. */
+    implicit val descendingCounterOrder: Ordering[Counter] =
       (x: Counter, y: Counter) => y.minorInstant.compareTo(x.minorInstant)
   }
 
@@ -171,7 +169,7 @@ object CounterRepository {
                         , minorInstant    = truncatedTo(chronoUnit)(instant)
                         , majorChronoUnit = byChronoUnit
                         , minorChronoUnit = chronoUnit
-                        , bucket = bucket
+                        , bucket          = bucket
                         )
 
     val HourByDayCounterOn: CounterOn =
@@ -191,7 +189,7 @@ object CounterRepository {
                         , minorInstant    = truncatedTo(YEARS)(instant)
                         , majorChronoUnit = FOREVER
                         , minorChronoUnit = YEARS
-                        , bucket = Year
+                        , bucket          = Year
                         )
   }
 
@@ -207,8 +205,8 @@ object CounterRepository {
     def apply(chronoUnit: ChronoUnit, byChronoUnit: ChronoUnit)(bucket: Bucket)(size: Int): CounterSpanOn =
       CounterSpanOn(bucket, start => unroll(size, start, CounterOn(chronoUnit, byChronoUnit)(bucket)))
 
-    private def unroll(size: Int, start: Instant, counterOn: CounterOn) = {
-      require(size > 0, "size must be a positive integer")
+    private def unroll(size: Int, start: Instant, counterOn: CounterOn): Seq[Counter] = {
+      require(size > 0, "larger than zero")
 
       @scala.annotation.tailrec
       def loop(before: Instant, accumulator: Vector[Counter]): Seq[Counter] =

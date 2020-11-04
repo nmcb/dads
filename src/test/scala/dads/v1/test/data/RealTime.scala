@@ -30,7 +30,7 @@ trait RealTime
 
   import DadsSettings._
 
-  override final implicit val patienceConfig: PatienceConfig =
+  override implicit final val patienceConfig: PatienceConfig =
     PatienceConfig(RealTimeServiceLevelAgreement.toSpan
       , RealTimeServiceLevelAgreement.div(10).toSpan
     )
@@ -59,7 +59,7 @@ trait RealTime
   final lazy val explicitArbitraryPastNowInstant: Arbitrary[Instant] =
     Arbitrary(pastNow.withUncertainty)
 
-  final lazy implicit val instantUncertainty: Uncertainty[Instant] =
+  final implicit lazy val instantUncertainty: Uncertainty[Instant] =
     (instant: Instant) => instant.`with`(instantUncertaintyAdjusterMillis)
 
   // UTILS
