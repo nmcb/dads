@@ -4,6 +4,8 @@ option java_multiple_files = true;
 option java_package = "dads.v1.transport.grpc.v1";
 option java_outer_classname = "ApProto";
 
+import "shared.v1.proto";
+
 service ApService { // Client
   rpc GetSourceInfo(SourceInfoReq) returns (SourceInfoRsp) {}
 }
@@ -133,15 +135,6 @@ message MeasurementsValues {
   uint64 timestamp = 1; // Milliseconds epoch UTC.
   MultiType value = 2;
   uint64 exactTime = 3; // Optional field only relevant for NotCumulative profile.
-}
-
-message MultiType {
-  oneof value {
-    bool bool = 1;
-    string string = 2;
-    bytes bytes = 3;
-    string decimal = 4; // Represent a decimal as a string in US locale (using a dot to represent floating point).
-  }
 }
 
 // Root packet Any Service -> DADS.

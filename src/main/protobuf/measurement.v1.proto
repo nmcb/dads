@@ -4,6 +4,8 @@ option java_multiple_files = true;
 option java_package = "dads.v1.transport.grpc.v1";
 option java_outer_classname = "MeasurementProto";
 
+import "shared.v1.proto";
+
 /*
 Message primitives:
 
@@ -45,13 +47,4 @@ message MeasurementData {
 message MeasurementValues {
   uint64 timestamp = 1; // UTC in milliseconds epoch.
   MultiType value = 2;
-}
-
-message MultiType {
-  oneof value {
-    bool bool = 1;
-    string string = 2;
-    bytes bytes = 3;
-    string decimal = 4; // Represent a decimal as a string in US locale (using a dot to represent floating point).
-  }
 }
