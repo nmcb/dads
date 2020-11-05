@@ -4,11 +4,11 @@ option java_multiple_files = true;
 option java_package = "dads.v1.transport.grpc.v1";
 option java_outer_classname = "ApProto";
 
-service DadsClientService {
+service ApService { // Client
   rpc GetSourceInfo(SourceInfoReq) returns (SourceInfoRsp) {}
 }
 
-service DadsServerService {
+service DadsService { // Server
   rpc GetMeasurements(MeasurementsReq) returns (MeasurementsRsp) {}
   rpc InvalidateSources(InvalidateCacheReq) returns (InvalidateCacheRsp) {}
 }
@@ -30,7 +30,7 @@ message SourceInfo {
   string sourceId = 1;
   // Represents the expected data type of the measurement values.
   // The ACMS is responsible for delivering the values in the correct data type.
-  string dataType = 2; // Values: decimal. New data types will be added in the future. Relevant for: Realtime, NotCumulative.
+  DataType dataType = 2; // Values: decimal. New data types will be added in the future. Relevant for: Realtime, NotCumulative.
   TimeSlicer timeSlicer = 3; // Relevant for: NotCumulative.
   uint32 realtimeTtl = 4; // Time To Live in seconds. Relevant for: Realtime.
   Origin origin = 5;
@@ -58,11 +58,18 @@ enum TimeSlicer {
   year1 = 8;
 }
 
+enum DataType {
+  Decimal = 0;
+  Bool = 1;
+  String = 2;
+  Bytes = 3;
+}
+
 enum CumulativeSource {
   Unsupported = 0; // This data can not be processed by the cumulative profile.
   Electricity = 1; // Micro watt hour <-> kWh
   Gas = 2; // mm3 <-> m3
-  Heat = 3; // J <-> GJ
+  Heat = 3; // J <-> GJ? TBD.
 }
 
 
