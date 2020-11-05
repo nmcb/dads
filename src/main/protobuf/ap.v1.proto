@@ -76,8 +76,8 @@ enum CumulativeSource {
 // Root packet Any Service -> DADS.
 // Request measurement data.
 message MeasurementsReq {
-  int32 startTime = 1;
-  int32 endTime = 2;
+  uint64 startTime = 1;
+  uint64 endTime = 2;
   string dataType = 3;
   // The time slicer as requested by the client. Only required for cumulative and not cumulative profile.
   // Does NOT represent how the data is stored but how the client wants it to be read.
@@ -114,7 +114,7 @@ enum StorageType {
 }
 
 message SourceUnitHistory {
-  int32 firstSeen = 1; // Seconds epoch UTC.
+  uint64 firstSeen = 1; // Seconds epoch UTC.
   string unit = 2; // Unit parsable by the squants library.
 }
 
