@@ -19,12 +19,12 @@ service MeasurementService { // Server
 
   // AP
   rpc GetMeasurements(MeasurementsReq) returns (MeasurementsRsp) {}
-  rpc InvalidateSources(InvalidateCacheReq) returns (InvalidateCacheRsp) {}
+  //rpc InvalidateSources(InvalidateCacheReq) returns (InvalidateCacheRsp) {}
 }
 
 service CustomerService { // Client
   // AP
-  rpc GetSourceInfo(SourceInfoReq) returns (SourceInfoRsp) {}
+  //rpc GetSourceInfo(SourceInfoReq) returns (SourceInfoRsp) {}
 }
 
 
