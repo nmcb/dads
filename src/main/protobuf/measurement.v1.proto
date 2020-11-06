@@ -22,10 +22,10 @@ service MeasurementService { // Server
   //rpc InvalidateSources(InvalidateCacheReq) returns (InvalidateCacheRsp) {}
 }
 
-service CustomerService { // Client
+//service CustomerService { // Client
   // AP
   //rpc GetSourceInfo(SourceInfoReq) returns (SourceInfoRsp) {}
-}
+//}
 
 
 // Root packet ACMS/ODA -> DADS

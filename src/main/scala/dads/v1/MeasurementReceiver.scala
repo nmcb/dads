@@ -111,6 +111,8 @@ object MeasurementReceiver {
 
     private val toDone: Any => Done =
       _ => Done
+
+    override def getMeasurements(in: MeasurementsReq): Future[MeasurementsRsp] = ???
   }
 }
 
