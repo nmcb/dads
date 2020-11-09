@@ -9,7 +9,7 @@ import java.time._
 
 case class Measurement( sourceId  : SourceId
                       , timestamp : Instant
-                      , reading   : Long
+                      , reading   : Double
                       , unit      : NaturalUnit
                       ) extends ProtoBuffed
 

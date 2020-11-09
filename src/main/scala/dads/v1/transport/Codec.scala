@@ -47,7 +47,7 @@ object Codec {
 
   def validateUnit(unit: String): Val[String] = {
     // TODO squants
-    if (unit != "kW") NoUnitOfMeasurement.invalidNec else unit.validNec
+    if (unit != "kW" && unit != "kWh" && unit != "m\u00b3" && unit != "J" && unit != "Wh") NoUnitOfMeasurement.invalidNec else unit.validNec
   }
 
   def validateSeqNr(seqNr: Int): Val[Int] =
@@ -56,16 +56,16 @@ object Codec {
   def validateInstant(instant: Long): Val[Instant] =
     Try(Instant.ofEpochMilli(instant)).fold(_ => NoValidInstant.invalidNec, _.validNec)
 
-  def validateMultiTypeValue(multiType: Option[MultiType]): Val[Long] =
+  def validateMultiTypeValue(multiType: Option[MultiType]): Val[Double] =
     if (multiType.isEmpty || !multiType.get.value.isDecimal)
       NoDecimalValue.invalidNec
     else
-      Try(multiType.get.value.decimal.map(_.toLong).get)
+      Try(multiType.get.value.decimal.map(_.toDouble).get)
         .fold( _ => NoDecimalValue.invalidNec
-             , l => if (l > 0) l.validNec else NotPositive.invalidNec
+             , l => if (l >= 0) l.validNec else NotPositive.invalidNec
              )
 
-  def validateMeasurementValuesList(measurements: List[MeasurementValues]): Val[Seq[(Instant,Long)]] =
+  def validateMeasurementValuesList(measurements: List[MeasurementValues]): Val[Seq[(Instant,Double)]] =
     if (measurements.isEmpty)
       NoMeasurements.invalidNec
     else if (measurements.size > MaxMeasurementsPerSourceId)
@@ -74,10 +74,10 @@ object Codec {
       ( validateInstant(mv.timestamp)
       , validateMultiTypeValue(mv.value)
       ).mapN(tuple2Identity)
-    ).sequence[Val,(Instant,Long)]
+    ).sequence[Val,(Instant,Double)]
 
   def validateMeasurementData(measurementData: MeasurementData): Val[Seq[Measurement]] = {
-    def rollout(sourceId: SourceId, unit: String)(values: Seq[(Instant, Long)]): Seq[Measurement] =
+    def rollout(sourceId: SourceId, unit: String)(values: Seq[(Instant, Double)]): Seq[Measurement] =
       values.map { case (instant, reading) =>
         Measurement(sourceId, instant, reading, unit)
       }

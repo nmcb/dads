@@ -35,10 +35,7 @@ class MeasurementReceiverTest
 
   import DadsSettings._
 
-  import transport.grpc._
-  import v1.MeasurementDataCnf
-  import v1.MeasurementDataInd
-  import v1.MeasurementServiceClient
+  import transport.grpc.v1._
 
   val testKit: ActorTestKit =
     ActorTestKit(ConfigFactory.defaultApplication.resolve)
@@ -71,8 +68,51 @@ class MeasurementReceiverTest
   "MeasurementReceiver" should {
     "process an arbitrary measurement data indication" in { // TODO can we get forAll to work here ?
       val ind = arbitrary[MeasurementDataInd].sample.get
+      println(ind)
       val task  = client.process(ind)
       task.futureValue should be (MeasurementDataCnf(ind.messageId))
+    }
+  }
+
+  // KNOWN BUGS
+
+  val test: MeasurementDataInd =
+    MeasurementDataInd( "c9d77b3b-3036-495a-bcee-104c93ce3a16"
+                      , Some(DeviceIdentity(1))
+                      , List( MeasurementData( "fb810cbe-ddef-4ccb-a568-78ec6319a185"
+                                             , 7345
+                                             , "kWh"
+                                             , Vector( MeasurementValues( 1604883129000L
+                                                                        , Some( MultiType(MultiType.Value.Decimal("0.0")))
+                                                                        )))
+                            , MeasurementData( "33f34fc1-bcad-40b8-adbf-b8908915baee"
+                                             , 7345
+                                             , "kW"
+                                             , Vector( MeasurementValues( 1604883129000L
+                                                                        , Some(MultiType(MultiType.Value.Decimal("0.338")))
+                                                                        )))
+                            , MeasurementData( "0532cac2-4b6e-48e2-8009-34117fdc860a"
+                                             , 7345
+                                             , "kWh"
+                                             , Vector( MeasurementValues( 1604883129000L
+                                                                        , Some(MultiType(MultiType.Value.Decimal("1671.43")))
+                                                                        )))
+                            , MeasurementData( "72204a0c-9a20-452b-9ea4-dd1414458ab0"
+                                             , 7345
+                                             , "kWh"
+                                             , Vector( MeasurementValues( 1604883129000L
+                                                                        , Some(MultiType(MultiType.Value.Decimal("1671.43")))
+                                                                        )))
+                            , MeasurementData( "d4404c4f-c717-480b-9b61-8f52aa34982a"
+                                             , 7345
+                                             , "kWh"
+                                             , Vector( MeasurementValues( 1604883129000L
+                                                                        , Some(MultiType(MultiType.Value.Decimal("2091.258"))))))))
+
+  "MeasurementReceiver" should {
+    "process " in {
+      val task  = client.process(test)
+      task.futureValue should be (MeasurementDataCnf(test.messageId))
     }
   }
 }
