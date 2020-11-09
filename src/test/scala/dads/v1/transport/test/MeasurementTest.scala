@@ -27,12 +27,11 @@ class MeasurementTest
 
   it should "normalise kWh readings" in {
     newFixture(1.0 , "kWh").normalise.unit    shouldBe "μWh"
-    newFixture(1.0 , "kWh").normalise.reading shouldBe 1.0E6
+    newFixture(1.0 , "kWh").normalise.reading shouldBe 1.0E9
   }
 
   it should "normalise m³ readings" in {
     newFixture(1.0 , "m³").normalise.unit    shouldBe "mm³"
     newFixture(1.0 , "m³").normalise.reading shouldBe 1.0E9
   }
-
 }
