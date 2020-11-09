@@ -1,4 +1,4 @@
-## DADS
+## DADS (Dad's Storage)
 
 Provides for humanly understandable time unit bucketed counter storage.
 
@@ -68,4 +68,4 @@ To deploy the application in development (test production locally) run:
 
 ### Publish and Deploy in production
 
-Deployment in production is provided automagically. 
+Deployment in production is provided automagically.

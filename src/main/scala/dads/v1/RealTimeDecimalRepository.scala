@@ -84,15 +84,12 @@ object RealTimeDecimalRepository {
       override def set(decimal: Decimal): Future[Done] = {
         update(settings.realtimeKeyspace, RealTimeDecimalTable)
           .usingTtl(DadsSettings.RealTimeToLive.toSeconds.toInt)
-          .setColumn(ValueColumn, literal(decimal.value.toLong))
+          .setColumn(ValueColumn, literal(decimal.value.bigDecimal))
           .whereColumn(SourceIdColumn).isEqualTo(literal(decimal.sourceId.uuid))
           .whereColumn(InstantIdColumn).isEqualTo(literal(decimal.instant.toEpochMilli))
           .build()
           .updateAsync()
       }
-
-      private def toDecimal(rs: Option[Row]): Option[Long] =
-        rs.map(_.getLong(ValueColumn))
 
       private def toDecimals(rs: Seq[Row]): Seq[Decimal] =
         rs.map(r =>

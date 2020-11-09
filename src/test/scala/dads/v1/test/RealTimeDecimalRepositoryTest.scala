@@ -69,7 +69,10 @@ class RealTimeDecimalRepositoryTest
             case (sourceId, expectedValue) =>
               for {
                 Some(decimal) <- realTimeDecimalRepository.getLast(sourceId)
-              } yield assert(decimal.value === expectedValue, s"sourceId:$sourceId")
+              } yield {
+                println(s"compare act/exp: ${decimal.value}/${expectedValue}")
+                assert(decimal.value === expectedValue, s"sourceId:$sourceId")
+              }
           }.toSeq
         )
       )
