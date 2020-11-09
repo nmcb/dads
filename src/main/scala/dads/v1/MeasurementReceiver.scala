@@ -5,13 +5,15 @@
 package dads.v1
 
 import scala.util._
-
 import scala.concurrent._
 
 import akka.Done
 import akka.actor.typed._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl._
+
+import cats.data._
+import cats.implicits._
 
 import transport._
 import grpc.v1._
@@ -104,13 +106,19 @@ object MeasurementReceiver {
     // FIXME client protocol/interface, currently only returns a cnf if all adjustments succeed
       inbound
         .as[Update]
-        .fold( errors => throw new RuntimeException(s"boom: $errors")
+        .map(_.normalise)
+        .fold( errors => abort(inbound.messageId, errors)
              , update => Future
                            .sequence(update.measurements.map(measurement => process(measurement)))
                            .map(_ => MeasurementDataCnf(update.messageId.toString)))
 
     private val toDone: Any => Done =
       _ => Done
+
+    private def abort(messageId: String, errors: NonEmptyChain[InboundError]): Nothing =
+      throw new RuntimeException(
+        s"inbound errors on message $messageId:\n${errors.map(_.message + "\n").toList.mkString("- ", "- ", "\n")}"
+      )
   }
 }
 

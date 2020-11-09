@@ -47,7 +47,14 @@ object Codec {
 
   def validateUnit(unit: String): Val[String] = {
     // TODO squants
-    if (unit != "kW" && unit != "kWh" && unit != "m\u00b3" && unit != "J" && unit != "Wh") NoUnitOfMeasurement.invalidNec else unit.validNec
+    if (     unit != "kW"
+          && unit != "kWh"
+          && unit != "m³"
+          && unit != "J"
+          && unit != "Wh" )
+      NoUnitOfMeasurement.invalidNec
+    else
+      unit.validNec
   }
 
   def validateSeqNr(seqNr: Int): Val[Int] =

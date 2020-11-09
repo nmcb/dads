@@ -42,8 +42,8 @@ object DadsSettings {
 
   // Inbound limits MeasurementService
 
-  final val MaxSourceIdsPerIndication  = 1
-  final val MaxMeasurementsPerSourceId = 1
+  final val MaxSourceIdsPerIndication  = 5
+  final val MaxMeasurementsPerSourceId = 5
 
   // FIXME squants
   final val MinDecimalReadingValue = 1L
