@@ -35,10 +35,7 @@ class MeasurementReceiverTest
 
   import DadsSettings._
 
-  import transport.grpc._
-  import v1.MeasurementDataCnf
-  import v1.MeasurementDataInd
-  import v1.MeasurementServiceClient
+  import transport.grpc.v2._
 
   val testKit: ActorTestKit =
     ActorTestKit(ConfigFactory.defaultApplication.resolve)

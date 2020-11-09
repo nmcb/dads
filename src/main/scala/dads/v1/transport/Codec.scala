@@ -10,7 +10,7 @@ import java.time._
 import scala.util._
 import cats.implicits._
 
-import transport.grpc.v1._
+import transport.grpc.v2._
 
 
 // TODO decouple validate/decode ?

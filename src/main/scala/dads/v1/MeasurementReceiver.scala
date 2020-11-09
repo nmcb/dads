@@ -14,7 +14,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl._
 
 import transport._
-import grpc.v1._
+import grpc.v2._
 
 object MeasurementReceiver {
 

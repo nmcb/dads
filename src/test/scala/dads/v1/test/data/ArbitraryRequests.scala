@@ -19,7 +19,7 @@ trait ArbitraryRequests
   import DadsSettings._
 
   import transport._
-  import grpc.v1._
+  import grpc.v2._
 
   implicit val arbitraryMultiTypeValueDecimal: Arbitrary[MultiType.Value.Decimal] =
     Arbitrary(
