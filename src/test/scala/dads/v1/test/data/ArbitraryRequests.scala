@@ -28,8 +28,7 @@ trait ArbitraryRequests
         .map(MultiType.Value.Decimal(_)))
 
   implicit val arbitraryMultiTypeValue: Arbitrary[MultiType.Value] =
-  // FIXME unused bool, string and bytes type
-    Arbitrary(arbitrary[MultiType.Value.Decimal])
+    Arbitrary(arbitrary[MultiType.Value.Decimal]) // FIXME unused bool, string and bytes type
 
   implicit val arbitraryMultiType: Arbitrary[MultiType] =
     Arbitrary(arbitrary[MultiType.Value].map(MultiType.of))
@@ -38,27 +37,27 @@ trait ArbitraryRequests
     Arbitrary {
       for {
         timestamp <- explicitArbitraryPastNowInstant.arbitrary
-        value <- arbitrary[MultiType]
+        value     <- arbitrary[MultiType]
       } yield MeasurementValues.of(timestamp.toEpochMilli, Some(value))
     }
 
   implicit val arbitraryMeasurementData: Arbitrary[MeasurementData] =
     Arbitrary {
       for {
-        sourceId <- arbitrary[SourceId].map(_.toString)
-        sequenceNr = 0 // FIXME unused
-        unitOfMeasurement = "kW" // FIXME unused
-        size <- choose(1, MaxMeasurementsPerSourceId)
-        data <- listOfN(size, arbitrary[MeasurementValues])
+        sourceId          <- arbitrary[SourceId].map(_.toString)
+        sequenceNr        =  0    // FIXME unused
+        unitOfMeasurement =  "kW" // FIXME unused
+        size              <- choose(1, MaxMeasurementsPerSourceId)
+        data              <- listOfN(size, arbitrary[MeasurementValues])
       } yield MeasurementData.of(sourceId, sequenceNr, unitOfMeasurement, data)
     }
 
   implicit val arbitraryMeasurementDataInd: Arbitrary[MeasurementDataInd] =
     Arbitrary {
       for {
-        messageId <- arbitrary[UUID].map(_.toString)
-        device = None // FIXME unused
-        size <- choose(1, MaxSourceIdsPerIndication)
+        messageId    <- arbitrary[UUID].map(_.toString)
+        device       =  None  // FIXME unused
+        size         <- choose(1, MaxSourceIdsPerIndication)
         measurements <- listOfN(size, arbitrary[MeasurementData])
       } yield MeasurementDataInd.of(messageId, device, measurements)
     }

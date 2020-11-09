@@ -47,7 +47,7 @@ object MeasurementReceiver {
 
       def isNewMeasurement(current: Option[Decimal], measurement: Measurement): Boolean = {
         val res = current.exists(decimal => decimal.instant.isBefore(measurement.timestamp)) || (current.isEmpty && measurement.reading >= 0)
-        system.log.info(s"new measurement [${res}]")
+        system.log.info(s"${measurement.sourceId} => new measurement [${res}]")
         res
       }
 
@@ -70,33 +70,33 @@ object MeasurementReceiver {
       }
 
       for {
-        _       <- Future.successful(system.log.info(s"processing measurement: $measurement"))
-        current <- realTimeRepository.getLast(measurement.sourceId)
-        _       <- Future.successful(system.log.info(s"current value: $current"))
-        added   <- Future
-                     .successful(isNewMeasurement(current, measurement))
-                     .flatMap(newMeasurement =>
-                       if (newMeasurement)
-                         realTimeRepository.set(Decimal.from(measurement)).map(_ => true)
-                       else
-                         Future.successful(false)
-                     )
-        _       <- Future.successful(system.log.info(s"value added to realtime: $added"))
-        result  <- Future
-                     .successful(added)
-                     .flatMap[Done](add =>
-                       if (add && isIncreasing(current, measurement))
-                         Future.sequence(
-                           AllCountersOn.map(counterOn =>
-                             counterRepository.addTo(counterOn)(adjustmentFor(current, measurement))
-                         )).map(_ => {
-                           system.log.info(s"value added to counters: $added")
-                         }).map(toDone)
-                       else
-                         Future.successful(Done)).map(_ => {
-                            system.log.info(s"value added to counters: $added")
-                         }).map(toDone)
-        _       <- Future.successful(system.log.info(s"processed: $result"))
+        _         <- Future.successful(system.log.info(s"${measurement.sourceId} => processing measurement: $measurement"))
+        current   <- realTimeRepository.getLast(measurement.sourceId)
+        _         <- Future.successful(system.log.info(s"${measurement.sourceId} => current value: $current"))
+        persisted <- Future
+                       .successful(isNewMeasurement(current, measurement))
+                       .flatMap(newMeasurement =>
+                         if (newMeasurement)
+                           realTimeRepository.set(Decimal.from(measurement)).map(_ => true)
+                         else
+                           Future.successful(false)
+                       )
+        _         <- Future.successful(system.log.info(s"${measurement.sourceId} => realtime persisted: $persisted"))
+        result    <- Future
+                       .successful(persisted)
+                       .flatMap[Done](add =>
+                         if (add && isIncreasing(current, measurement))
+                           Future.sequence(
+                             AllCountersOn.map(counterOn =>
+                               counterRepository.addTo(counterOn)(adjustmentFor(current, measurement))
+                           )).map(_ => {
+                             system.log.info(s"${measurement.sourceId} => value added to counters")
+                           }).map(toDone)
+                         else
+                           Future.successful(Done)).map(_ => {
+                              system.log.info(s"${measurement.sourceId} => value not added to counters")
+                           }).map(toDone)
+        _         <- Future.successful(system.log.info(s"${measurement.sourceId} => processed: $result"))
       } yield result
     }
 
