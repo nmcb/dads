@@ -17,7 +17,7 @@ import scala.util._
 
 import data._
 import transport._
-import grpc.v1._
+import grpc.v2._
 
 object TestAWSMeasurementReceiver
   extends App

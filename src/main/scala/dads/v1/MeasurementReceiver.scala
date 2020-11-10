@@ -16,7 +16,7 @@ import cats.data._
 import cats.implicits._
 
 import transport._
-import grpc.v1._
+import grpc.v2._
 
 object MeasurementReceiver {
 
@@ -114,6 +114,9 @@ object MeasurementReceiver {
 
     private val toDone: Any => Done =
       _ => Done
+
+    def getMeasurements(in: MeasurementsReq): Future[MeasurementsRsp] =
+      ???
 
     private def abort(messageId: String, errors: NonEmptyChain[InboundError]): Nothing =
       throw new RuntimeException(
