@@ -102,7 +102,6 @@ message MeasurementsReq {
   uint64 endTime                               =  2; // [prod] The end-time of requested measurements; UTC in milliseconds since epoch, exclusive
   string dataType                              =  3; // [arch] Possibly provides for the required measurement type, ignored in prod
   TimeSlicer timeSlicer                        =  4; // [arch] Possible provides for the requested measurement aggregation accuracy, ignored in prod
-  Origin origin                                =  5; // [arch] Possibly provides for the dimension of the requested quantity, ignored in prod
   string representationUnit                    =  6; // [arch] The unit in which the measurements should be returned, ignored in prod
 
   // FIXME hardcoded in prod to ???
@@ -123,12 +122,6 @@ enum TimeSlicer {
   week1  = 6;
   month1 = 7;
   year1  = 8;
-}
-
-// [arch] The dimension of the requested quantity
-message Origin {
-  string originName       = 1; // [arch] Unknown
-  string physicalQuantity = 2; // [arch] The physical quantity which the measurement data represents. E.g. Energy, Power, Volume, etc.
 }
 
 // [arch] The type of persistent storage from which to retrieve the measurements
