@@ -52,13 +52,13 @@ trait ArbitraryRequests
       } yield MeasurementData.of(sourceId, sequenceNr, unitOfMeasurement, data)
     }
 
-  implicit val arbitraryMeasurementDataInd: Arbitrary[MeasurementDataInd] =
+  implicit val arbitraryMeasurementDataReq: Arbitrary[MeasurementDataReq] =
     Arbitrary {
       for {
         messageId    <- arbitrary[UUID].map(_.toString)
         device       =  None  // FIXME unused
         size         <- choose(1, MaxSourceIdsPerIndication)
         measurements <- listOfN(size, arbitrary[MeasurementData])
-      } yield MeasurementDataInd.of(messageId, device, measurements)
+      } yield MeasurementDataReq.of(messageId, device, measurements)
     }
 }

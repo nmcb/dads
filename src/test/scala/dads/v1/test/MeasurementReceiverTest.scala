@@ -66,17 +66,17 @@ class MeasurementReceiverTest
         .withTls(false)) // FIXME should not be used in production
 
   "MeasurementReceiver" should {
-    "process an arbitrary measurement data indication" in { // TODO can we get forAll to work here ?
-      val ind = arbitrary[MeasurementDataInd].sample.get
-      val task  = client.process(ind)
-      task.futureValue should be (MeasurementDataCnf(ind.messageId))
+    "process an arbitrary measurement data request" in { // TODO can we get forAll to work here ?
+      val req = arbitrary[MeasurementDataReq].sample.get
+      val task  = client.process(req)
+      task.futureValue should be (MeasurementDataRsp(req.messageId))
     }
   }
 
   // KNOWN BUGS
 
-  val issue_11: MeasurementDataInd =
-    MeasurementDataInd( "c9d77b3b-3036-495a-bcee-104c93ce3a16"
+  val issue_11: MeasurementDataReq =
+    MeasurementDataReq( "c9d77b3b-3036-495a-bcee-104c93ce3a16"
                       , Some(DeviceIdentity(1))
                       , List( MeasurementData( "fb810cbe-ddef-4ccb-a568-78ec6319a185"
                                              , 7345
@@ -111,7 +111,7 @@ class MeasurementReceiverTest
   "MeasurementReceiver" should {
     "process issue #11" in {
       val task  = client.process(issue_11)
-      task.futureValue should be (MeasurementDataCnf(issue_11.messageId))
+      task.futureValue should be (MeasurementDataRsp(issue_11.messageId))
     }
   }
 }

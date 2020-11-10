@@ -10,38 +10,38 @@ option java_multiple_files = true;
 option java_package = "dads.v1.transport.grpc.v2";
 option java_outer_classname = "MeasurementProto";
 
-/* DADS Service Specification.
+/* DADS Service Provider Specification.
  *
  * Message primitives:
  *
  * Ind - Indication - Issued by the service-provider to the target service-user to indicate that a procedure has been invoked by its peer.
- * Cnf - Confirm    - Issued by the target service-user to the service-provider at the completion of the procedure previously invoked by an indication.
+ * Cnf - Confirm    - Issued by the target service-user to the service-provider at the completion of the procedure previously invoked by an request.
  * Req - Request    - Issued by the origin to the service-provider in order to invoke some procedure.
  * Rsp - Response   - Issued by the service-provider to the origin service-user to complete the procedure previously invoked by a request.
  */
 service MeasurementService {
 
-  /* Processes and persist an indication of given source ID measurements.
+  /* Processes and persists a request of given measurements, identified by source.
    *
-   * Called synchronously from the ACMS service provider.
+   * Called synchronously from the ACMS service-user.
    */
-  rpc Process (MeasurementDataInd) returns (MeasurementDataCnf) {}
+  rpc Process (MeasurementDataReq) returns (MeasurementDataRsp) {}
 
   /* Retrieve a time ordered list of measurements for given source IDs.
    *
-   * Called synchronously from the AP.
+   * Called synchronously from the AP service-user.
    */
   rpc GetMeasurements(MeasurementsReq) returns (MeasurementsRsp) {}
 }
 
-/* [prod] A measurement data process indication sent to the DADS to processing and store persistently
+/* [prod] A measurement data process request sent to the DADS to processing and store persistently.
  *
- * see: MeasurementService.Process
+ * see: [[MeasurementService.Process]]
  */
-message MeasurementDataInd {
-  string messageId                      = 1; // [prod] Message UUID to confirm processing with
-  DeviceIdentity device                 = 2; // [arch] Device identity structure
-  repeated MeasurementData measurements = 3; // [prod] Measurements with given sourceIDs for given messageID
+message MeasurementDataReq {
+  string messageId                      = 1; // [prod] Message UUID to confirm the processing and persistence of in response
+  DeviceIdentity device                 = 2; // [arch] Device identity structure, ignored in prod
+  repeated MeasurementData measurements = 3; // [prod] Measurements with given source UUIDs for given message UUIDs
 }
 
 // [arch] Identifies a device (type)
@@ -52,8 +52,17 @@ message DeviceIdentity {
 // [prod] Contains a sequence of measurements for one source UUID
 message MeasurementData {
   string sourceId                 = 1;  // [prod] A source UUID
-  uint32 seqNr                    = 2;  // [arch] Possibly provides for acknowledgement at source level
-  string unit                     = 3;  // [prod] In a format parsable by the squants library
+  uint32 seqNr                    = 2;  // [arch] Possibly provides for acknowledgement at source level, ignored in prod
+
+  /*  [prod] The unit of given measurement values, parsable by the squants library's SI standard.
+   *
+   *  Supported are:
+   *
+   *  - squants.energy.Energy (primary SI symbol `J`) allowed are: `kWh`, `J`
+   *  - energy.Power (primary SI symbol `W`) parsable are `kWh`
+   *  - energy.EnergyDensity: ""
+   */
+  string unit                     = 3;
   repeated MeasurementValues data = 4;  // [prod] This source measurements
 }
 
@@ -73,13 +82,13 @@ message MultiType {
   }
 }
 
-/* [prod] A measurement data process confirmation to let the client know the data is processed and persisted.
+/* [prod] A measurement data process response to let the client know the data is processed and persisted.
  *
  * see: MeasurementService.Process
  * see: https://github.com/nmcb/dads/issues/10
  */
-message MeasurementDataCnf {
-  string messageId = 1;                      // [prod] Echos a message UUID indication.
+message MeasurementDataRsp {
+  string messageId = 1;                      // [prod] Echos a message UUID request.
 }
 
 /* [prod] A measurement data request
@@ -170,7 +179,7 @@ message MeasurementsResults {
 // [prod] A requested measurement value
 message MeasurementsValues {
   uint64 timestamp = 1; // [prod] Milliseconds since the epoch UTC on which the value was registered
-  MultiType value  = 2; // [prod] Reuse of the measurement indication, contains a value of selected type, prod supports only values of type decimal
+  MultiType value  = 2; // [prod] Reuse of the measurement request, contains a value of selected type, prod supports only values of type decimal
   uint64 exactTime = 3; // [arch] Optional field only relevant for NotCumulative profile.
 }
 
