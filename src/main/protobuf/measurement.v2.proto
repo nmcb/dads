@@ -1,23 +1,22 @@
 syntax = "proto3";
 
 // FIXME Specify required:
-// - inbound/outbound units of measurements
 // - and supported dimensions.
 
 // DADS Implementation Configuration
 
-option java_multiple_files = true;
-option java_package = "dads.v1.transport.grpc.v2";
-option java_outer_classname = "MeasurementProto";
+option java_multiple_files  = true;
+option java_package         = "dads.v1.transport.grpc.v2";
+option java_outer_classname = "ProtoMeasurementStorage";
 
 /* DADS Service Provider Specification.
  *
  * Message primitives:
  *
- * Ind - Indication - Issued by the service-provider to the target service-user to indicate that a procedure has been invoked by its peer.
- * Cnf - Confirm    - Issued by the target service-user to the service-provider at the completion of the procedure previously invoked by an request.
- * Req - Request    - Issued by the origin to the service-provider in order to invoke some procedure.
- * Rsp - Response   - Issued by the service-provider to the origin service-user to complete the procedure previously invoked by a request.
+ * ind - Indication - Issued by the service-provider to the target service-user to indicate that a procedure has been invoked by its peer.
+ * cnf - Confirm    - Issued by the target service-user to the service-provider at the completion of the procedure previously invoked by a request.
+ * req - Request    - Issued by the origin to the service-provider in order to invoke some procedure.
+ * rsp - Response   - Issued by the service-provider to the origin service-user to complete the procedure previously invoked by a request.
  */
 service MeasurementService {
 
@@ -145,7 +144,7 @@ message SourceUnitHistory {
   string unit = 2;      // [arch] See message [[MeasurementData.unit]]
 }
 
-// [arch] The dimension of the requested quantity 
+// [arch] The dimension of the requested quantity
 message Origin {
   string originName       = 1; // [arch] Unknown
   string physicalQuantity = 2; // [arch] The physical quantity which the measurement data represents. E.g. Energy, Power, Volume, etc.
