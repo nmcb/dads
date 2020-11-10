@@ -136,12 +136,19 @@ enum StorageType {
 message SourceQuery {
   string sourceId                        = 1; // [prod] The source UUID to retrieve measurements for
   repeated SourceUnitHistory unitHistory = 2; // [arch] Possibly provides to handle unit changes in the persistent history, ignored in prod
+  Origin origin                          = 3; // [arch] Possibly provides for the dimension of the requested quantity, ignored in prod
 }
 
 // [arch] Possibly provides an alternative to request units of a certain type, ignored in prod
 message SourceUnitHistory {
   uint64 firstSeen = 1; // [arch] The earliest moment the unit was observed as a valid measurement for given source UUID, in seconds since the epoch in UTC, ignored in prod
   string unit = 2;      // [arch] See message [[MeasurementData.unit]]
+}
+
+// [arch] The dimension of the requested quantity 
+message Origin {
+  string originName       = 1; // [arch] Unknown
+  string physicalQuantity = 2; // [arch] The physical quantity which the measurement data represents. E.g. Energy, Power, Volume, etc.
 }
 
 // [arch] Possibly provides an alternative way to select the measurement's dimension, currently hardcoded on electricity
@@ -189,4 +196,3 @@ message GenericError {
   uint32 errorCode = 1; // [arch] Machine readable error code
   string errorMsg  = 2; // [arch] Human readable error message
 }
-
