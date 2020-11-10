@@ -26,6 +26,8 @@ service MeasurementService {
   /* Retrieve a time ordered list of measurements for given source IDs.
    *
    * Called synchronously from the AP.
+   *
+   * FIXME AWAIT PR https://github.com/nmcb/dads/pull/18 BEFORE IMPLEMENTING
    */
   rpc GetMeasurements(MeasurementsReq) returns (MeasurementsRsp) {}
 }
