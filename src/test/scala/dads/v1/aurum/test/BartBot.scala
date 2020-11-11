@@ -38,17 +38,17 @@ object BartBot
         .connectToServiceAt(Host, Port)
         .withTls(false))
 
-  val indication: MeasurementDataInd =
+  val request: MeasurementDataInd =
     arbitrary[MeasurementDataInd].sample.getOrElse(throw new RuntimeException("booms"))
 
-  println(s"Testing with new messages: ${indication.messageId}-${indication}")
+  println(s"Testing with new messages: ${request.messageId}-${request}")
 
   val task: Future[MeasurementDataCnf] =
-    client.process(indication)
+    client.process(request)
 
   task.onComplete {
-    case Success(confirmation) =>
-      println(s"Successfully processed: ${confirmation.messageId}")
+    case Success(response) =>
+      println(s"Successfully processed: ${response.messageId}")
       clientSystem.terminate()
     case Failure(exception) =>
       println(s"Failure: ${exception.getMessage}")

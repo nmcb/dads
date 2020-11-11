@@ -179,4 +179,3 @@ message GenericError {
   uint32 errorCode = 1; // [arch] Machine readable error code
   string errorMsg  = 2; // [arch] Human readable error message
 }
-

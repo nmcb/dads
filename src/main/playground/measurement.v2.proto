@@ -1,0 +1,197 @@
+syntax = "proto3";
+
+// FIXME Specify required:
+// - and supported dimensions.
+
+// DADS Implementation Configuration
+
+option java_multiple_files  = true;
+option java_package         = "dads.v1.transport.grpc.v2";
+option java_outer_classname = "ProtoMeasurementStorage";
+
+/* DADS Service Provider Specification.
+ *
+ * Message primitives:
+ *
+ * ind - Indication - Issued by the service-provider to the target service-user to indicate that a procedure has been invoked by its peer.
+ * cnf - Confirm    - Issued by the target service-user to the service-provider at the completion of the procedure previously invoked by a request.
+ * req - Request    - Issued by the origin to the service-provider in order to invoke some procedure.
+ * rsp - Response   - Issued by the service-provider to the origin service-user to complete the procedure previously invoked by a request.
+ */
+service MeasurementService {
+
+  /* Processes and persists a request of given measurements, identified by source.
+   *
+   * Called synchronously from the ACMS service-user.
+   */
+  rpc Process (MeasurementDataInd) returns (MeasurementDataCnf) {}
+
+  /* Retrieve a time ordered list of measurements for given source IDs.
+   *
+   * Called synchronously from the AP service-user.
+   */
+  rpc GetMeasurements(MeasurementsReq) returns (MeasurementsRsp) {}
+}
+
+/* [prod] A measurement data process request sent to the DADS to processing and store persistently.
+ *
+ * see: [[MeasurementService.Process]]
+ */
+message MeasurementDataInd {
+  string messageId                      = 1; // [prod] Message UUID to confirm the processing and persistence of in response
+  DeviceIdentity device                 = 2; // [arch] Device identity structure, ignored in prod
+  repeated MeasurementData measurements = 3; // [prod] Measurements with given source UUIDs for given message UUIDs
+}
+
+// [arch] Identifies a device (type)
+message DeviceIdentity {
+  uint32 type = 1; // [arch] Current values are: 0=Unknown, 1=ALD, 2=ODA, ignored in prod
+}
+
+// [prod] Contains a sequence of measurements for one source UUID
+message MeasurementData {
+  string sourceId                 = 1;  // [prod] A source UUID
+  uint32 seqNr                    = 2;  // [arch] Possibly provides for acknowledgement at source level, ignored in prod
+
+  /*  [prod] The unit of given measurement values, parsable by the squants library's SI standard.
+   *
+   *  Supported dimensions en units of measurement are:
+   *
+   *  - squants.energy.Energy  (primary SI unit Joules with symbol J)        allowed are "J", "kWh" and "Wh"
+   *  - squants.energy.Power   (primary SI unit Watts with symbol W)         allowed is "kW"
+   *  - squants.energy.Volume  (primary SI unit cubic meter with symbol m³)  allowed is "m³"
+   */
+  string unit                     = 3;
+  repeated MeasurementValues data = 4;  // [prod] This source's measurement values with given unit
+}
+
+// [prod] Contains a timestamp-measurement tuple
+message MeasurementValues {
+  uint64 timestamp = 1;  // [prod] UTC in milliseconds since epoch
+  MultiType value  = 2;  // [prod] A measurement of given type
+}
+
+// [prod] Contains a value of selected type, prod supports only values of type decimal
+message MultiType {
+  oneof value {
+    bool bool      = 1;  // [arch] Boolean measurement values, illegal in prod
+    string string  = 2;  // [arch] String measurement values, illegal in prod
+    bytes bytes    = 3;  // [arch] Byte string measurement values, illegal in prod
+    // FIXME reference an unambiguous specification, e.g: a JSON number, ref: https://www.json.org/json-en.html
+    // FIXME constrain number range?
+    string decimal = 4;  // [prod] Represent a decimal as a string in US locale (using a dot to represent floating point).
+  }
+}
+
+/* [prod] A measurement data process response to let the client know the data is processed and persisted.
+ *
+ * see: MeasurementService.Process
+ * see: https://github.com/nmcb/dads/issues/10
+ */
+message MeasurementDataCnf {
+  string messageId = 1;                      // [prod] Echos a message UUID request.
+}
+
+/* [prod] Message to request a time slice of measurements
+ *
+ * see: MeasurementService.GetMeasurements
+ */
+message MeasurementsReq {
+  uint64 startTime                             =  1; // [prod] The start-time of requested measurements; UTC in milliseconds since epoch, inclusive
+  uint64 endTime                               =  2; // [prod] The end-time of requested measurements; UTC in milliseconds since epoch, exclusive
+  string dataType                              =  3; // [arch] Possibly provides for the required measurement type, ignored in prod
+  TimeSlicer timeSlicer                        =  4; // [arch] Possible provides for the requested measurement aggregation accuracy, ignored in prod
+  string representationUnit                    =  6; // [arch] The unit in which the measurements should be returned, ignored in prod
+
+  // FIXME hardcoded in prod to ???
+  StorageType storageProfile                   =  7; // [arch] The type of persistent storage from which to retrieve the measurements, hardcoded in prod
+  repeated SourceQuery sourceQueries           =  8; // [prod] The query parameters deciding which measurements to return
+  repeated AggregationQuery aggregationQueries =  9; // [arch] Possibly provides for aggregation, ignored in prod
+  CumulativeSource cumulativeSource            = 10; // [arch] Cumulative source conversion signal, ignored in prod
+}
+
+// [arch] The requested measurement time slice accuracy
+enum TimeSlicer {
+  sec10  = 0;
+  min1   = 1;
+  min5   = 2;
+  min15  = 3;
+  hour1  = 4;
+  day1   = 5;
+  week1  = 6;
+  month1 = 7;
+  year1  = 8;
+}
+
+// [arch] The type of persistent storage from which to retrieve the measurements
+// TODO there is no difference between realtime and cumulative energy measurements because of the second law of thermodynamics.
+enum StorageType {
+  Realtime      = 0;
+  Cumulative    = 1;
+  NotCumulative = 2;
+}
+
+// [prod] The query parameters deciding which measurements to return
+message SourceQuery {
+  string sourceId                        = 1; // [prod] The source UUID to retrieve measurements for
+  repeated SourceUnitHistory unitHistory = 2; // [arch] Possibly provides to handle unit changes in the persistent history, ignored in prod
+  Origin origin                          = 3; // [arch] Possibly provides for the dimension of the requested quantity, ignored in prod
+}
+
+// [arch] Possibly provides an alternative to request units of a certain type, ignored in prod
+message SourceUnitHistory {
+  uint64 firstSeen = 1; // [arch] The earliest moment the unit was observed as a valid measurement for given source UUID, in seconds since the epoch in UTC, ignored in prod
+  string unit = 2;      // [arch] See message [[MeasurementData.unit]]
+}
+
+// [arch] The dimension of the requested quantity
+message Origin {
+  string originName       = 1; // [arch] Unknown
+  string physicalQuantity = 2; // [arch] The physical quantity which the measurement data represents. E.g. Energy, Power, Volume, etc.
+}
+
+// [arch] Possibly provides an alternative way to select the measurement's dimension, currently hardcoded on electricity
+enum CumulativeSource {
+  Unsupported = 0; // [arch] Signals that this data can not be processed by the cumulative profile
+  Electricity = 1; // [arch] Signals to convert kWh to µWh, ignored though this conversion is hardcoded in prod
+  Gas         = 2; // [arch] Signals to convert mm³ to mm³, ignored in prod
+  Heat        = 3; // [arch] Signals to convert GJ to J, ignored in prod
+}
+
+// [arch] Possibly provides for aggregation, ignored in prod
+message AggregationQuery {
+  string id                    = 1; // [arch] Generated by AP, possibly used as 'sourceId' in the response, ignored in prod
+  string aggregation           = 2; // [arch] String formula containing sourceIds, +, -, *, /, (, ) characters, possibly used to define calculations across multiple sources, ignored in prod
+  // TODO this rule seems to open up a potential security pit, to be discussed
+  repeated SourceQuery sources = 3; // [arch] The sources included in the aggregation, these sources are not required to be included in the response, for which the repeated [[SourceQuery.sourceId]] sequence is authoritative, ignored in prod
+}
+
+/* [prod] A measurement data response
+ *
+ * see: MeasurementService.GetMeasurements
+ */
+message MeasurementsRsp {
+  repeated MeasurementsResults results = 1; // [prod] Contains the requested measurement values
+  GenericError error                   = 2; // [arch] Contains a request validation error response, ignored in prod
+}
+
+// [prod] Contains the requested measurement values for a given source UUID
+message MeasurementsResults {
+  string sourceId                    = 1; // [prod] The source UUID of requested measurement values
+  repeated MeasurementsValue values  = 2; // [prod] The requested measurement values
+}
+
+// [prod] A requested measurement value
+message MeasurementsValue {
+  uint64 timestamp = 1; // [prod] Milliseconds since the epoch UTC on which the value was registered
+  MultiType value  = 2; // [prod] Reuse of the measurement request, contains a value of selected type, prod supports only values of type decimal
+  uint64 exactTime = 3; // [arch] Optional field only relevant for NotCumulative profile.
+}
+
+// [arch] A request validation error response, to be discussed, ignored in prod
+message GenericError {
+  // Proposal: 0=Unknown, 1=Request rejected/invalid, 2=Request fields failed validation, 3=Application error
+  // With any value starting from 100 being API specific.
+  uint32 errorCode = 1; // [arch] Machine readable error code
+  string errorMsg  = 2; // [arch] Human readable error message
+}

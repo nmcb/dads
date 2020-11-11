@@ -106,8 +106,8 @@ object Codec {
       data.map(md => validateMeasurementData(md)).sequence.map(_.flatten)
 
   implicit val measurementIndCodec: Codec[MeasurementDataInd, Update] =
-    indication =>
-      ( validateMessageId(indication.messageId)
-      , validateMeasurementDataSeq(indication.measurements.toList)
+    request =>
+      ( validateMessageId(request.messageId)
+      , validateMeasurementDataSeq(request.measurements.toList)
       ).mapN(Update)
 }

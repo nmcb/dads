@@ -66,10 +66,10 @@ class MeasurementReceiverTest
         .withTls(false)) // FIXME should not be used in production
 
   "MeasurementReceiver" should {
-    "process an arbitrary measurement data indication" in { // TODO can we get forAll to work here ?
-      val ind = arbitrary[MeasurementDataInd].sample.get
-      val task  = client.process(ind)
-      task.futureValue should be (MeasurementDataCnf(ind.messageId))
+    "process an arbitrary measurement data request" in { // TODO can we get forAll to work here ?
+      val req = arbitrary[MeasurementDataInd].sample.get
+      val task  = client.process(req)
+      task.futureValue should be (MeasurementDataCnf(req.messageId))
     }
   }
 
