@@ -1,29 +1,26 @@
-/*
- * This is free and unencumbered software released into the public domain.
+/**
+ * This is free and unencumbered software released into the public domain, still ...
+ *
+ * Copyright (C) 2020-11-10 - NMCB BV
  */
 
-package dads.v1
-package test
-
-import scala.concurrent._
+package dads.v1.aurum.test
 
 import akka.actor.typed._
-import akka.actor.typed.scaladsl._
+import akka.actor.typed.scaladsl.Behaviors
 import akka.grpc._
-
+import dads.v1.test.data._
+import dads.v1.transport.grpc.v2._
 import org.scalacheck._
 
+import scala.concurrent._
 import scala.util._
 
-import data._
-import transport._
-import grpc.v2._
-
-object TestAWSMeasurementReceiver
+object BartBot
   extends App
     with RealTime
-    with ArbitraryRequests
-{
+    with ArbitraryRequests {
+
   import Arbitrary._
 
   val Host = "aurum-app-load-balancer-4747366a6255f45e.elb.eu-central-1.amazonaws.com"

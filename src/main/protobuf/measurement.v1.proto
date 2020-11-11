@@ -26,6 +26,8 @@ service MeasurementService {
   /* Retrieve a time ordered list of measurements for given source IDs.
    *
    * Called synchronously from the AP.
+   *
+   * FIXME AWAIT PR https://github.com/nmcb/dads/pull/18 BEFORE IMPLEMENTING
    */
   rpc GetMeasurements(MeasurementsReq) returns (MeasurementsRsp) {}
 }
@@ -83,16 +85,15 @@ message MeasurementDataCnf {
  * see: MeasurementService.GetMeasurements
  */
 message MeasurementsReq {
-  uint64 startTime                             =  1; // [prod] The start-time of requested measurements; UTC in milliseconds since epoch
-  uint64 endTime                               =  2; // [prod] The end-time of requested measurements; UTC in milliseconds since epoch
-  string dataType                              =  3; // [arch] Possibly provides for the required measurement type, ignored in prod
-  TimeSlicer timeSlicer                        =  4; // [arch] Possible provides for the requested measurement aggregation accuracy, ignored in prod
-  Origin origin                                =  5; // [arch] Possibly provides for the dimension of the requested quantity, ignored in prod
-  string representationUnit                    =  6; // [arch] The unit in which the measurements should be returned, ignored in prod
-  StorageType storageProfile                   =  7; // [arch] The type of persistent storage from which to retrieve the measurements, hardcoded to ???
-  repeated SourceQuery sourceQueries           =  8; // [prod] The query parameters deciding which measurements to return
-  repeated AggregationQuery aggregationQueries =  9; // [arch] Possibly provides for aggregation, ignored in prod
-  CumulativeSource cumulativeSource            = 10; // [arch] Unknown, ignored in prod
+  uint64 startTime                             = 1; // [prod] The start-time of requested measurements; UTC in milliseconds since epoch
+  uint64 endTime                               = 2; // [prod] The end-time of requested measurements; UTC in milliseconds since epoch
+  string dataType                              = 3; // [arch] Possibly provides for the required measurement type, ignored in prod
+  TimeSlicer timeSlicer                        = 4; // [arch] Possible provides for the requested measurement aggregation accuracy, ignored in prod
+  string representationUnit                    = 5; // [arch] The unit in which the measurements should be returned, ignored in prod
+  StorageType storageProfile                   = 6; // [arch] The type of persistent storage from which to retrieve the measurements, hardcoded to ???
+  repeated SourceQuery sourceQueries           = 7; // [prod] The query parameters deciding which measurements to return
+  repeated AggregationQuery aggregationQueries = 8; // [arch] Possibly provides for aggregation, ignored in prod
+  CumulativeSource cumulativeSource            = 9; // [arch] Unknown, ignored in prod
 }
 
 // [arch] The requested measurement time slice accuracy
@@ -125,6 +126,7 @@ enum StorageType {
 message SourceQuery {
   string sourceId                        = 1; // [prod] The source UUID to retrieve measurements for
   repeated SourceUnitHistory unitHistory = 2; // [arch] Possibly provides to handle unit changes in the persistent history, ignored in prod
+  Origin origin                          = 3; // [arch] Possibly provides for the dimension of the requested quantity, ignored in prod
 }
 
 // [arch] Possibly provides an alternative to request units of a certain type, ignored in prod
