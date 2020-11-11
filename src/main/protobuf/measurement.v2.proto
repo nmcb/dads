@@ -57,9 +57,9 @@ message MeasurementData {
    *
    *  Supported dimensions en units of measurement are:
    *
-   *  - squants.energy.Energy (primary SI unit Joules with symbol J) allowed are "J", "kWh" and "Wh"
-   *  - squants.energy.Power (primary SI unit Watts with symbol W) allowed is "kW"
-   *  - squants.energy.Volume (primary SI unit cubic meter with symbol m³) allowed is "m³"
+   *  - squants.energy.Energy  (primary SI unit Joules with symbol J)        allowed are "J", "kWh" and "Wh"
+   *  - squants.energy.Power   (primary SI unit Watts with symbol W)         allowed is "kW"
+   *  - squants.energy.Volume  (primary SI unit cubic meter with symbol m³)  allowed is "m³"
    */
   string unit                     = 3;
   repeated MeasurementValues data = 4;  // [prod] This source's measurement values with given unit
@@ -67,7 +67,7 @@ message MeasurementData {
 
 // [prod] Contains a timestamp-measurement tuple
 message MeasurementValues {
-  uint64 timestamp = 1;  // [prod] UTC in milliseconds since epoch.
+  uint64 timestamp = 1;  // [prod] UTC in milliseconds since epoch
   MultiType value  = 2;  // [prod] A measurement of given type
 }
 
