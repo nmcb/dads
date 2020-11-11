@@ -41,12 +41,12 @@ object TestAWSMeasurementReceiver
         .connectToServiceAt(Host, Port)
         .withTls(false))
 
-  val request: MeasurementDataReq =
-    arbitrary[MeasurementDataReq].sample.getOrElse(throw new RuntimeException("booms"))
+  val request: MeasurementDataInd =
+    arbitrary[MeasurementDataInd].sample.getOrElse(throw new RuntimeException("booms"))
 
   println(s"Testing with new messages: ${request.messageId}-${request}")
 
-  val task: Future[MeasurementDataRsp] =
+  val task: Future[MeasurementDataCnf] =
     client.process(request)
 
   task.onComplete {

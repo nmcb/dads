@@ -102,7 +102,7 @@ object MeasurementReceiver {
       } yield result
     }
 
-    def process(inbound: MeasurementDataReq): Future[MeasurementDataRsp] =
+    def process(inbound: MeasurementDataInd): Future[MeasurementDataCnf] =
     // FIXME client protocol/interface, currently only returns a cnf if all adjustments succeed
       inbound
         .as[Update]
@@ -110,7 +110,7 @@ object MeasurementReceiver {
         .fold( errors => abort(inbound.messageId, errors)
              , update => Future
                            .sequence(update.measurements.map(measurement => process(measurement)))
-                           .map(_ => MeasurementDataRsp(update.messageId.toString)))
+                           .map(_ => MeasurementDataCnf(update.messageId.toString)))
 
     private val toDone: Any => Done =
       _ => Done

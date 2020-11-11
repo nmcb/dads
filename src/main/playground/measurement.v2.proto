@@ -24,7 +24,7 @@ service MeasurementService {
    *
    * Called synchronously from the ACMS service-user.
    */
-  rpc Process (MeasurementDataReq) returns (MeasurementDataRsp) {}
+  rpc Process (MeasurementDataInd) returns (MeasurementDataCnf) {}
 
   /* Retrieve a time ordered list of measurements for given source IDs.
    *
@@ -37,7 +37,7 @@ service MeasurementService {
  *
  * see: [[MeasurementService.Process]]
  */
-message MeasurementDataReq {
+message MeasurementDataInd {
   string messageId                      = 1; // [prod] Message UUID to confirm the processing and persistence of in response
   DeviceIdentity device                 = 2; // [arch] Device identity structure, ignored in prod
   repeated MeasurementData measurements = 3; // [prod] Measurements with given source UUIDs for given message UUIDs
@@ -88,7 +88,7 @@ message MultiType {
  * see: MeasurementService.Process
  * see: https://github.com/nmcb/dads/issues/10
  */
-message MeasurementDataRsp {
+message MeasurementDataCnf {
   string messageId = 1;                      // [prod] Echos a message UUID request.
 }
 
