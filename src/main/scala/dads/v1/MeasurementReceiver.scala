@@ -13,7 +13,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl._
 
 import cats.data._
-import cats.implicits._
 
 import transport._
 import grpc.v2._
