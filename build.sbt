@@ -31,7 +31,7 @@ lazy val dads =
              )
 
 // FIXME Pending https://github.com/sbt/sbt/issues/5008
-evictionWarningOptions in update :=
+(update / evictionWarningOptions) :=
   EvictionWarningOptions
     .default
     .withWarnTransitiveEvictions(false)
@@ -40,6 +40,6 @@ evictionWarningOptions in update :=
 
 dockerRepository              := Some("dads")
 dockerBaseImage               := "java"
-version            in Docker  := "latest"
-dockerExposedPorts in Docker  := Seq(8080)
-mainClass          in Compile := Some("dads.v1.Main")
+(Docker / version)  := "latest"
+(Docker / dockerExposedPorts)  := Seq(8080)
+(Compile / mainClass) := Some("dads.v1.Main")
