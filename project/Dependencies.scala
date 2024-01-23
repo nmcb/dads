@@ -18,7 +18,7 @@ object Dependencies {
   val datastaxCassandraDriverVersion  = "4.9.0"
 
   val scalaTestVersion  = "3.2.0"
-  val scalaCheckVersion = "1.14.1"
+  val scalaCheckVersion = "1.14.3"
 
   // LIBRARIES
 
