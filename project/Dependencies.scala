@@ -13,7 +13,7 @@ object Dependencies {
   val akkaAlpakkaVersion              = "2.0.1"
   val logbackVersion                  = "1.2.3"
   val catsCoreVersion                 = "2.1.1"
-  val kindProjectorPluginVersion      = "0.11.0"
+  val kindProjectorPluginVersion      = "0.11.3"
   val akkaPersistenceCassandraVersion = "1.0.1"
   val datastaxCassandraDriverVersion  = "4.9.0"
 
