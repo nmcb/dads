@@ -8,7 +8,7 @@ package transport
 import java.time._
 
 import scala.util._
-import cats.implicits._
+import cats.syntax.all._
 
 import transport.grpc.v2._
 
