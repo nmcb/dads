@@ -69,3 +69,6 @@ To deploy the application in development (test production locally) run:
 ### Publish and Deploy in production
 
 Deployment in production is provided automagically.
+
+
+ᓚᘏᗢ ... ᘛ⁐̤ᕐᐷ

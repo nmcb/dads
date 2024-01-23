@@ -119,7 +119,7 @@ object MeasurementReceiver {
 
     private def abort(messageId: String, errors: NonEmptyChain[InboundError]): Nothing =
       throw new RuntimeException(
-        s"inbound errors on message $messageId:\n${errors.map(_.message + "\n").toList.mkString("- ", "- ", "\n")}"
+        s"inbound errors on message $messageId:\n${errors.map(_.message + "\n").toChain.toList.mkString("- ", "- ", "\n")}"
       )
   }
 }
