@@ -10,12 +10,10 @@ import java.time._
 
 import org.scalacheck._
 
-trait ArbitraryCounters
-  extends ArbitrarySources
-  with RealTime
+trait ArbitraryCounters extends ArbitrarySources with RealTime
 {
   import Gen._
-  import Arbitrary._
+//  import Arbitrary._
 
   import DadsSettings._
 
@@ -32,13 +30,15 @@ trait ArbitraryCounters
         , YearCounterOn
       ))
 
-  implicit val arbitraryCounterInstant: Arbitrary[Counter] =
+  implicit val arbitraryCounterInstant: Arbitrary[Counter] = {
+    import Arbitrary.arbitrary
     Arbitrary {
       for {
-        instant <- arbitrary[Instant]
+        instant   <- arbitrary[Instant]
         counterOn <- arbitrary[CounterOn]
       } yield counterOn(instant)
     }
+  }
 
   implicit val arbitraryCounterSpanOn: Arbitrary[CounterSpanOn] =
     Arbitrary {
@@ -53,11 +53,13 @@ trait ArbitraryCounters
       } yield spanOf(size)
     }
 
-  implicit val arbitraryAdjustment: Arbitrary[Adjustment] =
+  implicit val arbitraryAdjustment: Arbitrary[Adjustment] = {
+    import Arbitrary._
     Arbitrary {
       for {
         sourceId <- arbitrary[SourceId]
-        value <- choose(MinAdjustmentValue, MaxAdjustmentValue)
+        value    <- choose(MinAdjustmentValue, MaxAdjustmentValue)
       } yield Adjustment(sourceId, realNow, value)
     }
+  }
 }

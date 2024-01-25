@@ -18,9 +18,7 @@ import org.scalacheck._
 import org.scalatest.concurrent._
 import org.scalatest.time._
 
-trait RealTime
-  extends PatienceConfiguration
-{
+trait RealTime extends PatienceConfiguration {
   import ChronoUnit._
 
   import Span._
