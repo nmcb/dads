@@ -9,5 +9,5 @@ object Workarounds {
 
   /** FIXME AkkaGrpcPlugin generates comments that breaks scaladoc during the sbt publish phase */
   lazy val onPublishMaskDocumentation: Setting[Task[Seq[File]]] =
-    sources in (Compile,doc) := Seq.empty
+    (Compile / doc / sources) := Seq.empty
 }

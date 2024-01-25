@@ -27,7 +27,7 @@ lazy val dads =
              )
 
 // FIXME Pending https://github.com/sbt/sbt/issues/5008
-evictionWarningOptions in update :=
+(update / evictionWarningOptions) :=
   EvictionWarningOptions
     .default
     .withWarnTransitiveEvictions(false)
