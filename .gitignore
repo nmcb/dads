@@ -4,6 +4,7 @@
 **/target
 *.class
 *.log
+.bsp/
 
 # intellij idea specifics
 .idea/

@@ -1,7 +1,3 @@
-/*
- * This is free and unencumbered software released into the public domain.
- */
-
 import Options._
 import Dependencies._
 import Workarounds._
@@ -38,8 +34,8 @@ evictionWarningOptions in update :=
     .withWarnDirectEvictions(false)
     .withWarnScalaVersionEviction(false)
 
-dockerRepository              := Some("dads")
-dockerBaseImage               := "java"
-version            in Docker  := "latest"
-dockerExposedPorts in Docker  := Seq(8080)
-mainClass          in Compile := Some("dads.v1.Main")
+dockerRepository            := Some("dads")
+dockerBaseImage             := "java"
+Docker / version            := "latest"
+Docker / dockerExposedPorts := Seq(8080)
+Docker / mainClass          := Some("dads.v1.Main")
