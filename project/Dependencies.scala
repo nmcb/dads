@@ -17,7 +17,7 @@ object Dependencies {
   val akkaPersistenceCassandraVersion = "1.0.1"
   val datastaxCassandraDriverVersion  = "4.17.0"
   val scalaTestVersion                = "3.2.19"
-  val scalaCheckVersion               = "1.17.1"
+  val scalaCheckVersion               = "1.18.0"
 
   // LIBRARIES
 
