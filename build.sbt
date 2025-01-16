@@ -2,7 +2,7 @@ import Options._
 import Dependencies._
 import Workarounds._
 
-ThisBuild / scalaVersion     := "2.13.14"
+ThisBuild / scalaVersion     := "2.13.16"
 ThisBuild / version          := "0.1.1"
 ThisBuild / organization     := "nmcb"
 ThisBuild / organizationName := "nmcb"
