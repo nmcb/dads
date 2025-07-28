@@ -9,7 +9,6 @@ ThisBuild / organizationName := "nmcb"
 
 lazy val dads =
   (project in file("."))
-    .configs(IntegrationTest)
     .enablePlugins(AkkaGrpcPlugin, JavaAppPackaging)
     .settings( name                := "dads"
 
@@ -21,7 +20,6 @@ lazy val dads =
                                           ).flatten
 
              , scalacOptions       ++= hygienicScalacOps
-             , Defaults.itSettings
              , onPublishMaskDocumentation
              , addCompilerPlugin(KindProjector)
              )
